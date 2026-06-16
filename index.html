@@ -1,0 +1,1027 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>Planet Toyota – Quotation Manager</title>
+<meta name="theme-color" content="#EB0A1E" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black" />
+<meta name="apple-mobile-web-app-title" content="PT Quotes" />
+<link rel="manifest" href="manifest.json" />
+<style>
+/* ===== RESET & BASE ===== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f0f0f0; }
+#app { max-width: 480px; margin: 0 auto; background: #fff; min-height: 100vh; position: relative; overflow: hidden; }
+button { cursor: pointer; font-family: inherit; }
+input, select, textarea { font-family: inherit; }
+
+/* ===== SCREENS ===== */
+.screen { display: none; flex-direction: column; min-height: 100vh; }
+.screen.active { display: flex; }
+.screen-body { flex: 1; overflow-y: auto; padding: 16px; padding-bottom: 32px; -webkit-overflow-scrolling: touch; }
+
+/* ===== TOPBAR ===== */
+.topbar { background: #000; padding: 12px 14px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; min-height: 52px; }
+.topbar-title { color: #fff; font-size: 15px; font-weight: 700; }
+.topbar-sub { color: #aaa; font-size: 11px; margin-top: 1px; }
+.topbar-left { display: flex; flex-direction: column; }
+.topbar-right { display: flex; gap: 8px; }
+.back-btn { background: none; border: none; color: #fff; font-size: 24px; line-height: 1; padding: 0 6px 0 0; }
+.icon-btn { background: none; border: none; color: #aaa; font-size: 18px; padding: 4px; }
+.icon-btn.red { color: #EB0A1E; font-size: 22px; font-weight: 700; }
+
+/* ===== LOGIN ===== */
+.login-wrap { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 24px 20px; background: #fff; }
+.login-logo { text-align: center; margin-bottom: 28px; }
+.logo-box { width: 64px; height: 64px; background: #EB0A1E; border-radius: 16px; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px; }
+.logo-t { color: #fff; font-size: 36px; font-weight: 900; line-height: 1; }
+.login-brand { font-size: 20px; font-weight: 800; letter-spacing: 2px; color: #111; }
+.login-sub { font-size: 12px; color: #888; margin-top: 4px; }
+.login-card { width: 100%; max-width: 340px; }
+.login-title { font-size: 13px; font-weight: 600; color: #555; margin-bottom: 8px; }
+.pin-dots { display: flex; justify-content: center; gap: 14px; margin: 16px 0 20px; }
+.pin-dots span { width: 14px; height: 14px; border-radius: 50%; border: 2px solid #ccc; background: transparent; transition: all 0.1s; }
+.pin-dots span.filled { background: #EB0A1E; border-color: #EB0A1E; }
+.pin-pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; max-width: 280px; margin: 0 auto; }
+.pin-key { padding: 16px 10px; background: #f5f5f5; border: none; border-radius: 12px; font-size: 20px; font-weight: 600; color: #111; text-align: center; transition: background 0.1s; }
+.pin-key:active { background: #e0e0e0; }
+.pin-key.del { font-size: 18px; color: #666; }
+.login-error { color: #EB0A1E; font-size: 13px; text-align: center; margin-top: 12px; min-height: 18px; }
+.login-manager-link { margin-top: 28px; color: #888; font-size: 13px; text-decoration: underline; cursor: pointer; }
+
+/* ===== HERO CARD ===== */
+.hero-card { background: linear-gradient(120deg, #111 50%, #2d0008); border-radius: 16px; padding: 18px 18px 20px; margin-bottom: 14px; color: #fff; }
+.hero-greeting { font-size: 12px; color: #aaa; letter-spacing: 0.5px; margin-bottom: 2px; }
+.hero-name { font-size: 20px; font-weight: 700; margin-bottom: 16px; }
+.hero-stats { display: flex; align-items: center; gap: 0; }
+.hstat { flex: 1; text-align: center; }
+.hstat-v { font-size: 22px; font-weight: 800; color: #EB0A1E; }
+.hstat-l { font-size: 10px; color: #888; margin-top: 2px; }
+.hstat-div { width: 1px; height: 36px; background: #333; }
+
+/* ===== NEW QUOTE BTN ===== */
+.new-quote-btn { width: 100%; padding: 14px; background: #EB0A1E; color: #fff; border: none; border-radius: 12px; font-size: 15px; font-weight: 700; margin-bottom: 18px; letter-spacing: 0.3px; }
+.new-quote-btn:active { opacity: 0.9; transform: scale(0.99); }
+
+/* ===== SECTION LABELS ===== */
+.section-label { font-size: 11px; font-weight: 700; color: #999; letter-spacing: 0.8px; margin-bottom: 8px; }
+
+/* ===== SEARCH ===== */
+.search-wrap { margin-bottom: 12px; }
+.search-input { width: 100%; padding: 10px 14px; border: 1px solid #e0e0e0; border-radius: 10px; font-size: 14px; background: #fafafa; }
+.search-input:focus { outline: none; border-color: #EB0A1E; box-shadow: 0 0 0 2px rgba(235,10,30,0.08); }
+
+/* ===== QUOTE CARDS ===== */
+.qcard { background: #fff; border: 1px solid #eeeeee; border-radius: 14px; padding: 13px 15px; margin-bottom: 10px; cursor: pointer; box-shadow: 0 1px 4px rgba(0,0,0,0.05); }
+.qcard:active { background: #fafafa; }
+.qcard-top { display: flex; justify-content: space-between; margin-bottom: 3px; }
+.qcard-name { font-weight: 700; font-size: 14px; color: #111; }
+.qcard-date { font-size: 11px; color: #aaa; }
+.qcard-vehicle { font-size: 13px; color: #666; margin-bottom: 6px; }
+.qcard-bottom { display: flex; justify-content: space-between; align-items: center; }
+.qcard-id { font-size: 11px; color: #bbb; }
+.qcard-price { font-size: 15px; font-weight: 800; color: #EB0A1E; }
+.qcard-exec { font-size: 11px; color: #aaa; background: #f5f5f5; padding: 2px 8px; border-radius: 10px; }
+.empty-state { text-align: center; color: #bbb; padding: 44px 0; font-size: 14px; }
+
+/* ===== FORM ===== */
+.form-section { background: #111; padding: 9px 12px; border-radius: 8px; margin: 16px 0 10px; color: #fff; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 6px; }
+.field-label { font-size: 12px; font-weight: 600; color: #666; display: block; margin-bottom: 5px; margin-top: 12px; }
+.field-input { width: 100%; padding: 11px 13px; border: 1px solid #ddd; border-radius: 10px; font-size: 14px; color: #111; background: #fff; -webkit-appearance: auto; appearance: auto; }
+.field-input:focus { outline: none; border-color: #EB0A1E; box-shadow: 0 0 0 2px rgba(235,10,30,0.1); }
+.field-row { display: flex; gap: 10px; }
+.field-half { flex: 1; }
+.tcs-row { background: #f8f8f8; border-radius: 10px; padding: 11px 13px; display: flex; justify-content: space-between; align-items: center; margin-top: 10px; }
+.tcs-info { font-size: 13px; font-weight: 600; }
+.tcs-sub { font-size: 11px; color: #888; }
+.tcs-toggle { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #666; }
+.tcs-toggle input[type=checkbox] { width: 20px; height: 20px; accent-color: #EB0A1E; }
+
+/* ===== ACCESSORIES ===== */
+.acc-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.acc-chip { padding: 7px 11px; border-radius: 20px; font-size: 12px; font-weight: 500; cursor: pointer; border: 1px solid #ddd; background: #fafafa; color: #555; user-select: none; -webkit-user-select: none; }
+.acc-chip.active { border: 2px solid #EB0A1E; background: #fff0f0; color: #EB0A1E; font-weight: 600; }
+.acc-total { font-size: 12px; color: #EB0A1E; font-weight: 700; margin-top: 6px; }
+
+/* ===== PRICE SUMMARY ===== */
+.price-summary { background: #f8f8f8; border-radius: 12px; padding: 10px 14px; margin-top: 14px; }
+.price-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 0.5px solid #eee; font-size: 13px; }
+.price-row .pl { color: #666; }
+.price-row.discount { color: #1a8a4a; }
+.price-total { display: flex; justify-content: space-between; padding: 10px 0 2px; border-top: 2px solid #EB0A1E; margin-top: 4px; font-size: 16px; font-weight: 800; color: #EB0A1E; }
+
+/* ===== BUTTONS ===== */
+.btn-primary { width: 100%; padding: 14px; background: #EB0A1E; color: #fff; border: none; border-radius: 12px; font-size: 15px; font-weight: 700; margin-top: 12px; }
+.btn-primary:disabled { background: #ccc; cursor: not-allowed; }
+.btn-primary:active { opacity: 0.9; }
+.btn-whatsapp { width: 100%; padding: 14px; background: #25D366; color: #fff; border: none; border-radius: 12px; font-size: 15px; font-weight: 700; margin-top: 10px; }
+.btn-outline { flex: 1; padding: 11px; background: transparent; border: 1.5px solid #EB0A1E; color: #EB0A1E; border-radius: 10px; font-size: 13px; font-weight: 700; }
+.btn-row { display: flex; gap: 10px; margin-top: 10px; }
+
+/* ===== QUOTATION PREVIEW ===== */
+.quote-doc { border: 2px solid #EB0A1E; border-radius: 14px; overflow: hidden; margin-bottom: 14px; }
+.qdoc-header { background: #000; padding: 14px 16px; display: flex; justify-content: space-between; align-items: flex-start; }
+.qdoc-dealer { color: #fff; font-size: 16px; font-weight: 800; letter-spacing: 1px; }
+.qdoc-dealer-sub { color: #888; font-size: 10px; margin-top: 2px; }
+.qdoc-id { color: #EB0A1E; font-weight: 800; font-size: 13px; }
+.qdoc-date { color: #aaa; font-size: 10px; margin-top: 2px; text-align: right; }
+.qdoc-tag { background: #EB0A1E; color: #fff; font-size: 9px; padding: 2px 7px; border-radius: 3px; margin-top: 4px; display: inline-block; }
+.qdoc-body { padding: 14px 16px; }
+.qdoc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+.qdoc-cell { background: #f8f8f8; border-radius: 10px; padding: 10px 12px; }
+.qdoc-cell-label { font-size: 9px; color: #888; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 4px; }
+.qdoc-cell-primary { font-size: 14px; font-weight: 700; color: #111; }
+.qdoc-cell-secondary { font-size: 12px; color: #666; margin-top: 1px; }
+.qdoc-cell-accent { font-size: 12px; color: #EB0A1E; font-weight: 500; }
+.qdoc-section-label { font-size: 11px; font-weight: 700; color: #888; letter-spacing: 0.5px; margin-bottom: 7px; }
+.qdoc-breakdown { background: #f9f9f9; border-radius: 10px; padding: 8px 12px; margin-bottom: 12px; }
+.qdoc-price-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 0.5px solid #eee; font-size: 13px; color: #444; }
+.qdoc-price-row.disc { color: #1a8a4a; }
+.qdoc-total-row { display: flex; justify-content: space-between; padding: 10px 0 2px; border-top: 2px solid #EB0A1E; margin-top: 4px; font-size: 16px; font-weight: 800; color: #EB0A1E; }
+.qdoc-acc-row { display: flex; justify-content: space-between; font-size: 12px; padding: 3px 0; border-bottom: 0.5px solid #f0f0f0; color: #444; }
+.qdoc-finance { background: #f0f4ff; border-radius: 10px; padding: 10px 12px; margin-bottom: 12px; }
+.qdoc-finance-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; font-size: 12px; margin-top: 4px; }
+.qdoc-finance-grid span { color: #888; }
+.qdoc-note { background: #fffbe6; border-radius: 8px; padding: 8px 12px; font-size: 12px; margin-bottom: 12px; color: #555; }
+.qdoc-footer { display: flex; justify-content: space-between; align-items: flex-end; border-top: 1px solid #eee; padding-top: 12px; }
+.qdoc-footer-exec { font-size: 13px; font-weight: 700; color: #111; }
+.qdoc-footer-sub { font-size: 10px; color: #888; margin-top: 2px; }
+.qdoc-sig { text-align: right; }
+.qdoc-sig-label { font-size: 10px; color: #aaa; margin-bottom: 18px; }
+.qdoc-sig-line { width: 90px; border-bottom: 1px solid #bbb; display: inline-block; }
+
+/* ===== MANAGER DASHBOARD ===== */
+.mgr-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 18px; }
+.mgr-stat { background: #f8f8f8; border-radius: 12px; padding: 14px; text-align: center; }
+.mgr-stat-v { font-size: 24px; font-weight: 800; color: #EB0A1E; }
+.mgr-stat-l { font-size: 11px; color: #888; margin-top: 3px; }
+.mgr-exec-row { background: #fff; border: 1px solid #eee; border-radius: 12px; padding: 12px 14px; margin-bottom: 8px; }
+.mgr-exec-name { font-size: 14px; font-weight: 700; color: #111; margin-bottom: 4px; }
+.mgr-exec-meta { display: flex; justify-content: space-between; font-size: 12px; color: #888; }
+.mgr-exec-value { color: #EB0A1E; font-weight: 700; }
+.mgr-filter-row { display: flex; gap: 8px; margin-bottom: 14px; overflow-x: auto; padding-bottom: 4px; }
+.mgr-filter { padding: 7px 14px; border-radius: 20px; border: 1px solid #ddd; background: #fafafa; font-size: 12px; font-weight: 600; color: #666; white-space: nowrap; cursor: pointer; }
+.mgr-filter.active { background: #EB0A1E; color: #fff; border-color: #EB0A1E; }
+.mgr-all-quotes { max-height: 420px; overflow-y: auto; }
+.sync-status { background: #f0f0f0; border-radius: 8px; padding: 8px 12px; font-size: 12px; color: #666; display: flex; align-items: center; gap: 6px; margin-bottom: 14px; }
+.sync-dot { width: 8px; height: 8px; border-radius: 50%; background: #25D366; }
+.sync-dot.pending { background: #f0a500; }
+.sync-dot.error { background: #EB0A1E; }
+.mgr-gs-config { background: #f0f4ff; border-radius: 12px; padding: 14px; margin-bottom: 14px; }
+.mgr-gs-title { font-size: 13px; font-weight: 700; margin-bottom: 8px; color: #334; }
+.mgr-gs-sub { font-size: 11px; color: #778; margin-bottom: 10px; }
+.mgr-bar-wrap { margin-bottom: 16px; }
+.mgr-bar-label { font-size: 12px; color: #555; margin-bottom: 4px; display: flex; justify-content: space-between; }
+.mgr-bar-track { background: #eee; border-radius: 10px; height: 8px; overflow: hidden; }
+.mgr-bar-fill { background: #EB0A1E; height: 100%; border-radius: 10px; transition: width 0.4s; }
+
+/* ===== TOAST ===== */
+.sync-toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: #111; color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 13px; font-weight: 500; pointer-events: none; opacity: 0; transition: opacity 0.3s; z-index: 9999; white-space: nowrap; }
+.sync-toast.show { opacity: 1; }
+
+/* ===== TENURE SLIDER ===== */
+.tenure-slider { width: 100%; accent-color: #EB0A1E; }
+.tenure-labels { display: flex; justify-content: space-between; font-size: 11px; color: #aaa; margin-top: 2px; }
+
+/* ===== PRINT ===== */
+@media print {
+  .no-print, .topbar { display: none !important; }
+  #app { max-width: 100%; box-shadow: none; }
+  .screen-body { padding: 0; overflow: visible; }
+  body { background: #fff; }
+  .quote-doc { border: 1.5px solid #EB0A1E; }
+}
+
+/* ===== SCROLLBAR ===== */
+::-webkit-scrollbar { width: 3px; }
+::-webkit-scrollbar-thumb { background: #ddd; border-radius: 2px; }
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="screen-login" class="screen active">
+    <div class="login-wrap">
+      <div class="login-logo">
+        <div class="logo-box"><span class="logo-t">T</span></div>
+        <div class="login-brand">PLANET TOYOTA</div>
+        <div class="login-sub">Quotation Manager · Narnaul</div>
+      </div>
+      <div class="login-card">
+        <div class="login-title">Select Your Name</div>
+        <select id="exec-select" class="field-input"></select>
+        <div class="login-title" style="margin-top:18px">Enter PIN</div>
+        <div class="pin-dots" id="pin-dots"><span></span><span></span><span></span><span></span></div>
+        <div class="pin-pad" id="pin-pad"></div>
+        <div class="login-error" id="login-error"></div>
+      </div>
+      <div class="login-manager-link" onclick="showManagerLogin()">Manager Login →</div>
+    </div>
+  </div>
+  <div id="screen-home" class="screen">
+    <div class="topbar">
+      <div class="topbar-left">
+        <div class="topbar-title">PT Quotes</div>
+        <div class="topbar-sub" id="home-exec-name"></div>
+      </div>
+      <div class="topbar-right">
+        <button class="icon-btn" onclick="logout()">⎋</button>
+      </div>
+    </div>
+    <div class="screen-body">
+      <div class="hero-card">
+        <div class="hero-greeting" id="hero-greeting">Good morning</div>
+        <div class="hero-name" id="hero-name">Executive</div>
+        <div class="hero-stats">
+          <div class="hstat"><div class="hstat-v" id="hs-total">0</div><div class="hstat-l">My Quotes</div></div>
+          <div class="hstat-div"></div>
+          <div class="hstat"><div class="hstat-v" id="hs-month">0</div><div class="hstat-l">This Month</div></div>
+          <div class="hstat-div"></div>
+          <div class="hstat"><div class="hstat-v" id="hs-value">₹0</div><div class="hstat-l">Pipeline</div></div>
+        </div>
+      </div>
+      <button class="new-quote-btn" onclick="goTo('form')">+ New Quotation</button>
+      <div class="section-label">RECENT QUOTES</div>
+      <div class="search-wrap">
+        <input type="search" id="home-search" class="search-input" placeholder="Search customer, model, phone..." oninput="renderHomeQuotes()" />
+      </div>
+      <div id="home-quote-list"></div>
+    </div>
+  </div>
+  <div id="screen-form" class="screen">
+    <div class="topbar">
+      <button class="back-btn" onclick="goTo('home')">‹</button>
+      <div class="topbar-title">New Quotation</div>
+      <div style="width:36px"></div>
+    </div>
+    <div class="screen-body" id="form-body"></div>
+  </div>
+  <div id="screen-preview" class="screen">
+    <div class="topbar no-print">
+      <button class="back-btn" onclick="goTo('home')">‹</button>
+      <div class="topbar-title" id="preview-title">Quotation</div>
+      <button class="icon-btn red" onclick="goTo('form')" title="New">+</button>
+    </div>
+    <div class="screen-body" id="preview-body"></div>
+  </div>
+  <div id="screen-manager" class="screen">
+    <div class="topbar">
+      <button class="back-btn" onclick="logout()">‹</button>
+      <div class="topbar-title">Manager Dashboard</div>
+      <div style="width:36px"></div>
+    </div>
+    <div class="screen-body" id="manager-body"></div>
+  </div>
+</div>
+<div id="sync-toast" class="sync-toast"></div>
+<script>
+// ============================================================
+// PLANET TOYOTA QMS — DATA CONFIGURATION
+// Edit this file to update models, executives, prices, etc.
+// ============================================================
+
+const MODELS = [
+  { name: "Fortuner", variants: ["2.7 Petrol MT 4x2","2.7 Petrol AT 4x2","2.8 Diesel MT 4x4","2.8 Diesel AT 4x4","Legender 4x2 AT","Legender 4x4 AT"] },
+  { name: "Innova HyCross", variants: ["G MT","G Plus MT","VX MT","VX Plus AT","ZX AT","ZX Plus AT"] },
+  { name: "Innova Crysta", variants: ["G MT 7S","G AT 7S","VX MT 7S","VX AT 7S","ZX AT 7S"] },
+  { name: "Urban Cruiser Taisor", variants: ["E MT","S MT","G MT","V MT","V AT","S Plus MT","G Plus MT","V Plus AT"] },
+  { name: "Hyryder", variants: ["E MT","S MT","G MT","V MT","S AT","G AT","V AT","S Hybrid","G Hybrid","V Hybrid"] },
+  { name: "Glanza", variants: ["E MT","S MT","G MT","V MT","S AT","G AT","V AT"] },
+  { name: "Camry", variants: ["Hybrid AT"] },
+  { name: "Vellfire", variants: ["2.5 Hybrid AT"] },
+  { name: "Hilux", variants: ["Standard 4x4 MT","High 4x4 AT"] },
+];
+
+const COLORS = [
+  "White Pearl Crystal Shine","Platinum White Pearl","Attitude Black Mica",
+  "Sparkling Black Pearl Crystal Shine","Silver Metallic","Avant-Garde Bronze Metallic",
+  "Burning Red","Midnight Black","Celestial Blue","Emotional Red","Silky Gold Mica","Super White",
+];
+
+const ACCESSORIES = [
+  { name: "Body Cover", price: 1500 },
+  { name: "Floor Mats (Rubber)", price: 2500 },
+  { name: "Floor Mats (3D Premium)", price: 4500 },
+  { name: "Seat Covers (Fabric)", price: 6500 },
+  { name: "Seat Covers (Leatherette)", price: 12000 },
+  { name: "Mud Flaps Set", price: 1200 },
+  { name: "Door Edge Guards", price: 800 },
+  { name: "Door Visors", price: 2200 },
+  { name: "Reverse Parking Sensors", price: 4500 },
+  { name: "Reverse Camera", price: 5500 },
+  { name: "Dashcam (Front)", price: 4500 },
+  { name: "Dashcam (Front + Rear)", price: 7000 },
+  { name: "Alloy Wheels (Set of 4)", price: 35000 },
+  { name: "Roof Carrier", price: 8000 },
+  { name: "Side Steps / Running Board", price: 12000 },
+  { name: "Chrome Door Handles", price: 2800 },
+  { name: "Steering Cover", price: 900 },
+  { name: "Sun Shades (Set)", price: 1800 },
+];
+
+const FINANCE_BANKS = [
+  "Toyota Financial Services","HDFC Bank","SBI","ICICI Bank",
+  "Axis Bank","Kotak Mahindra Bank","Yes Bank","IDFC First Bank","PNB","Canara Bank",
+];
+
+// ============================================================
+// EXECUTIVES — Add/remove as needed
+// PIN must be exactly 4 digits (stored as string)
+// ============================================================
+const EXECUTIVES = [
+  { name: "Rahul Sharma",   pin: "1234" },
+  { name: "Amit Singh",     pin: "2345" },
+  { name: "Priya Verma",    pin: "3456" },
+  { name: "Suresh Kumar",   pin: "4567" },
+  { name: "Deepak Yadav",   pin: "5678" },
+  { name: "Kavita Devi",    pin: "6789" },
+];
+
+// ============================================================
+// MANAGER — separate PIN
+// ============================================================
+const MANAGER = { name: "Piyush (Owner)", pin: "0000" };
+
+// ============================================================
+// GOOGLE SHEETS WEBHOOK
+// Steps to set up:
+//   1. Open your Google Sheet
+//   2. Extensions → Apps Script
+//   3. Paste the Apps Script from SETUP.md
+//   4. Deploy as Web App → Anyone can access
+//   5. Copy the Web App URL and paste below
+// Leave blank to disable auto-sync (manual WhatsApp share still works)
+// ============================================================
+const GOOGLE_SHEETS_WEBHOOK = "";  // e.g. "https://script.google.com/macros/s/YOUR_ID/exec"
+
+// Storage key
+const SK = "pt_qms_v2";
+// ============================================================
+// PLANET TOYOTA QMS — MAIN APP
+// ============================================================
+
+// ---- State ----
+let currentUser = null;  // { name, isManager }
+let currentQuote = null;
+let pinBuffer = "";
+let mgrFilter = "all";
+
+// ---- Storage ----
+function loadQuotes() {
+  try { return JSON.parse(localStorage.getItem(SK) || "[]"); } catch { return []; }
+}
+function saveQuoteLocal(q) {
+  const all = loadQuotes();
+  const i = all.findIndex(x => x.id === q.id);
+  if (i >= 0) all[i] = q; else all.unshift(q);
+  localStorage.setItem(SK, JSON.stringify(all));
+}
+
+// ---- Utilities ----
+function formatINR(n) {
+  return new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(n || 0);
+}
+function genId() {
+  const d = new Date();
+  return `PT${String(d.getFullYear()).slice(2)}${String(d.getMonth()+1).padStart(2,"0")}${String(d.getDate()).padStart(2,"0")}-${Math.floor(Math.random()*900)+100}`;
+}
+function greeting() {
+  const h = new Date().getHours();
+  if (h < 12) return "Good morning,"; if (h < 17) return "Good afternoon,"; return "Good evening,";
+}
+function thisMonth(q) {
+  const now = new Date();
+  const d = new Date(q.savedAt || Date.now());
+  return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+}
+function toast(msg, duration = 2500) {
+  const t = document.getElementById("sync-toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  setTimeout(() => t.classList.remove("show"), duration);
+}
+
+// ---- Screen navigation ----
+function goTo(name) {
+  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+  const el = document.getElementById(`screen-${name}`);
+  if (el) { el.classList.add("active"); el.scrollTop = 0; }
+  if (name === "home") renderHome();
+  if (name === "form") renderForm();
+  if (name === "manager") renderManager();
+}
+
+// ============================================================
+// LOGIN
+// ============================================================
+function initLogin() {
+  // Populate exec dropdown
+  const sel = document.getElementById("exec-select");
+  sel.innerHTML = `<option value="">— Select Executive —</option>`;
+  EXECUTIVES.forEach(e => { const o = document.createElement("option"); o.value = e.name; o.textContent = e.name; sel.appendChild(o); });
+  sel.onchange = () => { pinBuffer = ""; renderPinDots(); document.getElementById("login-error").textContent = ""; };
+  // PIN pad
+  const pad = document.getElementById("pin-pad");
+  pad.innerHTML = "";
+  [1,2,3,4,5,6,7,8,9,"",0,"⌫"].forEach(k => {
+    const btn = document.createElement("button");
+    btn.className = "pin-key" + (k === "⌫" ? " del" : "");
+    btn.textContent = k;
+    if (k === "") { btn.disabled = true; btn.style.background = "transparent"; }
+    btn.addEventListener("click", () => handlePin(k));
+    pad.appendChild(btn);
+  });
+}
+
+function renderPinDots() {
+  const dots = document.querySelectorAll("#pin-dots span");
+  dots.forEach((d, i) => d.classList.toggle("filled", i < pinBuffer.length));
+}
+
+function handlePin(k) {
+  if (k === "⌫") { pinBuffer = pinBuffer.slice(0,-1); renderPinDots(); return; }
+  if (pinBuffer.length >= 4) return;
+  pinBuffer += String(k);
+  renderPinDots();
+  if (pinBuffer.length === 4) setTimeout(tryLogin, 80);
+}
+
+function tryLogin() {
+  const name = document.getElementById("exec-select").value;
+  if (!name) { document.getElementById("login-error").textContent = "Please select your name first."; pinBuffer = ""; renderPinDots(); return; }
+  const exec = EXECUTIVES.find(e => e.name === name);
+  if (exec && exec.pin === pinBuffer) {
+    currentUser = { name, isManager: false };
+    document.getElementById("login-error").textContent = "";
+    goTo("home");
+  } else {
+    document.getElementById("login-error").textContent = "Incorrect PIN. Try again.";
+    pinBuffer = "";
+    renderPinDots();
+  }
+}
+
+function showManagerLogin() {
+  document.getElementById("exec-select").innerHTML = `<option value="__MANAGER__">Manager / Owner</option>`;
+  document.getElementById("exec-select").value = "__MANAGER__";
+  document.getElementById("login-error").textContent = "";
+  pinBuffer = "";
+  renderPinDots();
+  // Override tryLogin temporarily
+  document._mgrMode = true;
+}
+
+// Patch tryLogin to support manager
+const _origTryLogin = tryLogin;
+function tryLogin() {
+  if (document._mgrMode) {
+    if (pinBuffer === MANAGER.pin) {
+      currentUser = { name: MANAGER.name, isManager: true };
+      document.getElementById("login-error").textContent = "";
+      document._mgrMode = false;
+      goTo("manager");
+    } else {
+      document.getElementById("login-error").textContent = "Incorrect manager PIN.";
+      pinBuffer = "";
+      renderPinDots();
+    }
+    return;
+  }
+  _origTryLogin();
+}
+
+function logout() {
+  currentUser = null; pinBuffer = ""; document._mgrMode = false;
+  document.getElementById("exec-select").innerHTML = "";
+  initLogin();
+  goTo("login");
+}
+
+// ============================================================
+// HOME
+// ============================================================
+function renderHome() {
+  if (!currentUser) return;
+  document.getElementById("home-exec-name").textContent = currentUser.name;
+  document.getElementById("hero-greeting").textContent = greeting();
+  document.getElementById("hero-name").textContent = currentUser.name.split(" ")[0];
+  const all = loadQuotes();
+  const mine = all.filter(q => q.exec === currentUser.name);
+  const mineMonth = mine.filter(thisMonth);
+  const pipeline = mine.reduce((s,q) => s + (q.pr?.orp || 0), 0);
+  document.getElementById("hs-total").textContent = mine.length;
+  document.getElementById("hs-month").textContent = mineMonth.length;
+  document.getElementById("hs-value").textContent = pipeline >= 1e7 ? `₹${(pipeline/1e7).toFixed(1)}Cr` : pipeline >= 1e5 ? `₹${(pipeline/1e5).toFixed(0)}L` : `₹${Math.round(pipeline/1000)}K`;
+  renderHomeQuotes();
+}
+
+function renderHomeQuotes() {
+  const q = loadQuotes().filter(x => x.exec === currentUser.name);
+  const s = document.getElementById("home-search").value.toLowerCase();
+  const filtered = s ? q.filter(x => (x.cust?.name||"").toLowerCase().includes(s) || (x.veh?.model||"").toLowerCase().includes(s) || (x.cust?.phone||"").includes(s) || (x.id||"").toLowerCase().includes(s)) : q;
+  const list = document.getElementById("home-quote-list");
+  if (!filtered.length) { list.innerHTML = `<div class="empty-state">No quotations yet.<br>Tap "+ New Quotation" to start.</div>`; return; }
+  list.innerHTML = filtered.map(q => `
+    <div class="qcard" onclick="openQuote('${q.id}')">
+      <div class="qcard-top"><span class="qcard-name">${q.cust?.name||"—"}</span><span class="qcard-date">${q.date||""}</span></div>
+      <div class="qcard-vehicle">${q.veh?.model||""} · ${q.veh?.variant||""}</div>
+      <div class="qcard-bottom"><span class="qcard-id">#${q.id}</span><span class="qcard-price">${formatINR(q.pr?.orp)}</span></div>
+    </div>`).join("");
+}
+
+function openQuote(id) {
+  const q = loadQuotes().find(x => x.id === id);
+  if (!q) return;
+  currentQuote = q;
+  document.getElementById("preview-title").textContent = `#${q.id}`;
+  renderPreview(q);
+  goTo("preview");
+}
+
+// ============================================================
+// FORM
+// ============================================================
+let formState = {};
+
+function initFormState() {
+  formState = { cName:"", cPhone:"", cCity:"", model:"", variant:"", color:"", exShow:"", accs:[], tcs:true, ins:"", rto:"", hand:"", disc:"", fBank:"", fLoan:"", fTenure:60, fDown:"", notes:"" };
+}
+
+function renderForm() {
+  initFormState();
+  buildFormHTML();
+}
+
+function buildFormHTML() {
+  const body = document.getElementById("form-body");
+  body.innerHTML = `
+    <div class="form-section">👤 Customer Details</div>
+    <label class="field-label">Customer Name *</label>
+    <input class="field-input" id="f-cName" placeholder="Full name" oninput="formState.cName=this.value;updatePriceSummary()" />
+    <div class="field-row">
+      <div class="field-half">
+        <label class="field-label">Mobile Number *</label>
+        <input class="field-input" id="f-cPhone" type="tel" maxlength="10" placeholder="10-digit" oninput="formState.cPhone=this.value" />
+      </div>
+      <div class="field-half">
+        <label class="field-label">City / Village</label>
+        <input class="field-input" id="f-cCity" placeholder="Narnaul / Ateli..." oninput="formState.cCity=this.value" />
+      </div>
+    </div>
+
+    <div class="form-section">🚗 Vehicle Selection</div>
+    <label class="field-label">Model *</label>
+    <select class="field-input" id="f-model" onchange="formState.model=this.value;formState.variant='';renderVariants()">
+      <option value="">— Select Model —</option>
+      ${MODELS.map(m=>`<option>${m.name}</option>`).join("")}
+    </select>
+    <div id="variant-wrap"></div>
+    <label class="field-label">Colour</label>
+    <select class="field-input" id="f-color" onchange="formState.color=this.value">
+      <option value="">— Select Colour —</option>
+      ${COLORS.map(c=>`<option>${c}</option>`).join("")}
+    </select>
+
+    <div class="form-section">💰 Pricing</div>
+    <label class="field-label">Ex-Showroom Price (₹) *</label>
+    <input class="field-input" id="f-exShow" type="number" placeholder="e.g. 1800000" oninput="formState.exShow=this.value;updatePriceSummary()" />
+    <div class="field-row">
+      <div class="field-half">
+        <label class="field-label">Insurance (₹)</label>
+        <input class="field-input" id="f-ins" type="number" placeholder="0" oninput="formState.ins=this.value;updatePriceSummary()" />
+      </div>
+      <div class="field-half">
+        <label class="field-label">RTO (₹)</label>
+        <input class="field-input" id="f-rto" type="number" placeholder="0" oninput="formState.rto=this.value;updatePriceSummary()" />
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field-half">
+        <label class="field-label">Handling / Other (₹)</label>
+        <input class="field-input" id="f-hand" type="number" placeholder="0" oninput="formState.hand=this.value;updatePriceSummary()" />
+      </div>
+      <div class="field-half">
+        <label class="field-label">Discount / Offer (₹)</label>
+        <input class="field-input" id="f-disc" type="number" placeholder="0" oninput="formState.disc=this.value;updatePriceSummary()" />
+      </div>
+    </div>
+    <div class="tcs-row">
+      <div>
+        <div class="tcs-info">TCS @ 1%</div>
+        <div class="tcs-sub" id="tcs-amount-label">Auto-calculated on ex-showroom</div>
+      </div>
+      <div class="tcs-toggle">
+        <span id="tcs-value-display">₹0</span>
+        <input type="checkbox" id="f-tcs" checked onchange="formState.tcs=this.checked;updatePriceSummary()" />
+      </div>
+    </div>
+
+    <div class="form-section">🛠️ Accessories</div>
+    <input class="search-input" id="acc-search" placeholder="Search accessories..." oninput="renderAccChips()" style="margin-bottom:8px" />
+    <div class="acc-chips" id="acc-chips"></div>
+    <div class="acc-total" id="acc-total"></div>
+
+    <div class="form-section">🏦 Finance (Optional)</div>
+    <select class="field-input" id="f-fBank" onchange="formState.fBank=this.value;renderFinanceFields()">
+      <option value="">Cash / Not yet decided</option>
+      ${FINANCE_BANKS.map(b=>`<option>${b}</option>`).join("")}
+    </select>
+    <div id="finance-fields"></div>
+
+    <div class="form-section">📝 Notes</div>
+    <textarea class="field-input" id="f-notes" rows="3" placeholder="Exchange offer, colour availability, special request..." oninput="formState.notes=this.value" style="resize:none"></textarea>
+
+    <div id="price-summary-wrap"></div>
+
+    <button class="btn-primary" id="gen-btn" onclick="generateQuote()" disabled>Generate Quotation →</button>
+    <div style="height:28px"></div>
+  `;
+  renderAccChips();
+  updatePriceSummary();
+}
+
+function renderVariants() {
+  const wrap = document.getElementById("variant-wrap");
+  const m = MODELS.find(x => x.name === formState.model);
+  if (!m) { wrap.innerHTML = ""; return; }
+  wrap.innerHTML = `<label class="field-label">Variant *</label>
+    <select class="field-input" id="f-variant" onchange="formState.variant=this.value">
+      <option value="">— Select Variant —</option>
+      ${m.variants.map(v=>`<option>${v}</option>`).join("")}
+    </select>`;
+}
+
+function renderAccChips() {
+  const s = (document.getElementById("acc-search")?.value || "").toLowerCase();
+  const chips = document.getElementById("acc-chips");
+  chips.innerHTML = ACCESSORIES.filter(a => a.name.toLowerCase().includes(s)).map(a => {
+    const active = formState.accs.find(x=>x.name===a.name);
+    return `<span class="acc-chip${active?" active":""}" onclick="toggleAcc('${a.name}',${a.price})">${a.name} ${formatINR(a.price)}</span>`;
+  }).join("");
+  const total = formState.accs.reduce((s,a)=>s+a.price,0);
+  const at = document.getElementById("acc-total");
+  at.textContent = formState.accs.length ? `Accessories total: ${formatINR(total)}` : "";
+}
+
+function toggleAcc(name, price) {
+  const has = formState.accs.find(a=>a.name===name);
+  formState.accs = has ? formState.accs.filter(a=>a.name!==name) : [...formState.accs, {name,price}];
+  renderAccChips();
+  updatePriceSummary();
+}
+
+function renderFinanceFields() {
+  const wrap = document.getElementById("finance-fields");
+  if (!formState.fBank) { wrap.innerHTML = ""; return; }
+  wrap.innerHTML = `
+    <div class="field-row" style="margin-top:10px">
+      <div class="field-half"><label class="field-label">Loan Amount (₹)</label><input class="field-input" id="f-fLoan" type="number" placeholder="0" oninput="formState.fLoan=this.value" /></div>
+      <div class="field-half"><label class="field-label">Down Payment (₹)</label><input class="field-input" id="f-fDown" type="number" placeholder="0" oninput="formState.fDown=this.value" /></div>
+    </div>
+    <label class="field-label">Loan Tenure: <span id="tenure-display">${formState.fTenure}</span> months</label>
+    <input type="range" class="tenure-slider" min="12" max="84" step="12" value="${formState.fTenure}" oninput="formState.fTenure=parseInt(this.value);document.getElementById('tenure-display').textContent=this.value" />
+    <div class="tenure-labels"><span>12m</span><span>36m</span><span>60m</span><span>84m</span></div>`;
+}
+
+function calcPricing() {
+  const exS = parseFloat(formState.exShow) || 0;
+  const accT = formState.accs.reduce((s,a)=>s+a.price,0);
+  const tcsA = formState.tcs ? Math.round(exS*0.01) : 0;
+  const ins = parseFloat(formState.ins) || 0;
+  const rto = parseFloat(formState.rto) || 0;
+  const hand = parseFloat(formState.hand) || 0;
+  const disc = parseFloat(formState.disc) || 0;
+  const fastag = 400;
+  const orp = exS + accT + tcsA + ins + rto + hand + fastag - disc;
+  return { exS, accT, tcsA, ins, rto, hand, fastag, disc, orp };
+}
+
+function updatePriceSummary() {
+  const p = calcPricing();
+  // Update TCS display
+  const tv = document.getElementById("tcs-value-display");
+  if (tv) tv.textContent = formatINR(p.tcsA);
+  const tl = document.getElementById("tcs-amount-label");
+  if (tl) tl.textContent = `Auto-calculated · ${formatINR(p.tcsA)}`;
+
+  const wrap = document.getElementById("price-summary-wrap");
+  if (!wrap) return;
+  const rows = [
+    ["Ex-Showroom Price", p.exS],
+    ["Accessories", p.accT],
+    ["TCS @ 1%", p.tcsA],
+    ["Insurance", p.ins],
+    ["RTO & Registration", p.rto],
+    ["Handling / Logistics", p.hand],
+    ["FASTag", p.fastag],
+  ].filter(([,v])=>v>0);
+  wrap.innerHTML = `
+    <div class="price-summary" style="margin-top:16px">
+      <div class="section-label" style="margin-bottom:8px">PRICE SUMMARY</div>
+      ${rows.map(([l,v])=>`<div class="price-row"><span class="pl">${l}</span><span>${formatINR(v)}</span></div>`).join("")}
+      ${p.disc>0?`<div class="price-row discount"><span>Discount</span><span>−${formatINR(p.disc)}</span></div>`:""}
+      <div class="price-total"><span>On-Road Price</span><span>${formatINR(p.orp)}</span></div>
+    </div>`;
+
+  // Enable/disable generate button
+  const btn = document.getElementById("gen-btn");
+  if (btn) btn.disabled = !(formState.cName && formState.model && p.exS > 0);
+}
+
+function generateQuote() {
+  const p = calcPricing();
+  const q = {
+    id: genId(),
+    date: new Date().toLocaleDateString("en-IN", {day:"2-digit",month:"short",year:"numeric"}),
+    savedAt: Date.now(),
+    cust: { name: formState.cName, phone: formState.cPhone, city: formState.cCity },
+    veh: { model: formState.model, variant: formState.variant, color: formState.color },
+    pr: { ...p, accs: formState.accs },
+    fin: { bank: formState.fBank, loan: parseFloat(formState.fLoan)||0, ten: formState.fTenure, down: parseFloat(formState.fDown)||0 },
+    exec: currentUser.name,
+    notes: formState.notes,
+  };
+  saveQuoteLocal(q);
+  syncToSheets(q);
+  currentQuote = q;
+  document.getElementById("preview-title").textContent = `#${q.id}`;
+  renderPreview(q);
+  goTo("preview");
+  toast("✅ Quotation saved!");
+}
+
+// ============================================================
+// PREVIEW
+// ============================================================
+function renderPreview(q) {
+  const p = q.pr;
+  const priceRows = [
+    ["Ex-Showroom Price", p.exS],
+    ["Accessories", p.accT],
+    ["TCS @ 1%", p.tcsA],
+    ["Insurance", p.ins],
+    ["RTO & Registration", p.rto],
+    ["Handling / Logistics", p.hand],
+    ["FASTag", p.fastag||400],
+  ].filter(([,v])=>v>0);
+
+  document.getElementById("preview-body").innerHTML = `
+    <div class="quote-doc">
+      <div class="qdoc-header">
+        <div>
+          <div class="qdoc-dealer">PLANET TOYOTA</div>
+          <div class="qdoc-dealer-sub">Authorised Toyota Dealer · Narnaul, Haryana</div>
+          <div class="qdoc-dealer-sub">Sanghi Autoplex Pvt. Ltd.</div>
+        </div>
+        <div style="text-align:right">
+          <div class="qdoc-id">${q.id}</div>
+          <div class="qdoc-date">${q.date}</div>
+          <div class="qdoc-tag">QUOTATION</div>
+        </div>
+      </div>
+      <div class="qdoc-body">
+        <div class="qdoc-grid">
+          <div class="qdoc-cell">
+            <div class="qdoc-cell-label">CUSTOMER</div>
+            <div class="qdoc-cell-primary">${q.cust.name||"—"}</div>
+            <div class="qdoc-cell-secondary">${q.cust.phone||""}</div>
+            <div class="qdoc-cell-secondary">${q.cust.city||""}</div>
+          </div>
+          <div class="qdoc-cell">
+            <div class="qdoc-cell-label">VEHICLE</div>
+            <div class="qdoc-cell-primary">${q.veh.model||"—"}</div>
+            <div class="qdoc-cell-secondary">${q.veh.variant||""}</div>
+            <div class="qdoc-cell-accent">${q.veh.color||""}</div>
+          </div>
+        </div>
+
+        <div class="qdoc-section-label">PRICE BREAKUP</div>
+        <div class="qdoc-breakdown">
+          ${priceRows.map(([l,v])=>`<div class="qdoc-price-row"><span>${l}</span><span>${formatINR(v)}</span></div>`).join("")}
+          ${p.disc>0?`<div class="qdoc-price-row disc"><span>Discount / Offer</span><span>−${formatINR(p.disc)}</span></div>`:""}
+          <div class="qdoc-total-row"><span>On-Road Price</span><span>${formatINR(p.orp)}</span></div>
+        </div>
+
+        ${p.accs?.length ? `
+          <div class="qdoc-section-label">ACCESSORIES INCLUDED</div>
+          <div style="margin-bottom:12px">
+            ${p.accs.map(a=>`<div class="qdoc-acc-row"><span>• ${a.name}</span><span>${formatINR(a.price)}</span></div>`).join("")}
+          </div>` : ""}
+
+        ${q.fin?.bank ? `
+          <div class="qdoc-finance">
+            <div class="qdoc-section-label">FINANCE DETAILS</div>
+            <div class="qdoc-finance-grid">
+              <div><span>Bank: </span>${q.fin.bank}</div>
+              <div><span>Loan: </span>${formatINR(q.fin.loan)}</div>
+              <div><span>Down Pmt: </span>${formatINR(q.fin.down)}</div>
+              <div><span>Tenure: </span>${q.fin.ten} months</div>
+            </div>
+          </div>` : ""}
+
+        ${q.notes ? `<div class="qdoc-note"><strong>Note:</strong> ${q.notes}</div>` : ""}
+
+        <div class="qdoc-footer">
+          <div>
+            <div class="qdoc-cell-label">PREPARED BY</div>
+            <div class="qdoc-footer-exec">${q.exec||"Planet Toyota"}</div>
+            <div class="qdoc-footer-sub">Planet Toyota · Narnaul · Authorised Dealer</div>
+            <div class="qdoc-footer-sub">Valid 7 days · Prices subject to change</div>
+          </div>
+          <div class="qdoc-sig">
+            <div class="qdoc-sig-label">Customer Signature</div>
+            <div class="qdoc-sig-line"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="no-print">
+      <button class="btn-primary" onclick="window.print()">🖨️ Print / Save as PDF</button>
+      <button class="btn-whatsapp" onclick="shareWA()">📲 Share via WhatsApp</button>
+      <div class="btn-row">
+        <button class="btn-outline" onclick="goTo('home')">All Quotes</button>
+        <button class="btn-outline" onclick="initFormState();goTo('form')">+ New Quote</button>
+      </div>
+    </div>
+    <div style="height:24px"></div>`;
+}
+
+function shareWA() {
+  const q = currentQuote;
+  if (!q) return;
+  const p = q.pr;
+  const lines = [
+    `🚗 *Planet Toyota – Vehicle Quotation*`,
+    ``,
+    `Quote No: *${q.id}*   Date: ${q.date}`,
+    ``,
+    `👤 *Customer:* ${q.cust.name}`,
+    `📞 ${q.cust.phone}${q.cust.city?` · ${q.cust.city}`:""}`,
+    ``,
+    `🚗 *Vehicle:* ${q.veh.model}`,
+    `   Variant: ${q.veh.variant}`,
+    `   Colour: ${q.veh.color}`,
+    ``,
+    `*💰 Price Breakup:*`,
+    `Ex-Showroom:  ${formatINR(p.exS)}`,
+    p.accT>0?`Accessories:  ${formatINR(p.accT)}`:"",
+    p.tcsA>0?`TCS (1%):     ${formatINR(p.tcsA)}`:"",
+    p.ins>0?`Insurance:    ${formatINR(p.ins)}`:"",
+    p.rto>0?`RTO:          ${formatINR(p.rto)}`:"",
+    p.hand>0?`Handling:     ${formatINR(p.hand)}`:"",
+    `FASTag:       ${formatINR(p.fastag||400)}`,
+    p.disc>0?`Discount:    −${formatINR(p.disc)}`:"",
+    ``,
+    `*On-Road Price: ${formatINR(p.orp)}*`,
+    ``,
+    q.fin?.bank?`🏦 Finance: ${q.fin.bank} · ${q.fin.ten}m · Down: ${formatINR(q.fin.down)}`:"",
+    q.notes?`📌 Note: ${q.notes}`:"",
+    ``,
+    `_Valid for 7 days from issue date_`,
+    `_Sales Executive: ${q.exec}_`,
+    ``,
+    `🏪 *Planet Toyota, Narnaul*`,
+    `_Authorised Toyota Kirloskar Motor Dealer_`,
+    `_Mahendragarh, Haryana_`,
+  ].filter(l=>l!=="").join("\n");
+  window.open(`https://wa.me/?text=${encodeURIComponent(lines)}`, "_blank");
+}
+
+// ============================================================
+// MANAGER DASHBOARD
+// ============================================================
+function renderManager() {
+  const all = loadQuotes();
+  const now = new Date();
+
+  // Filter
+  let filtered = all;
+  if (mgrFilter !== "all") {
+    if (mgrFilter === "today") {
+      const td = now.toDateString();
+      filtered = all.filter(q => new Date(q.savedAt||0).toDateString() === td);
+    } else if (mgrFilter === "month") {
+      filtered = all.filter(thisMonth);
+    } else {
+      filtered = all.filter(q => q.exec === mgrFilter);
+    }
+  }
+
+  // Stats
+  const totalORP = filtered.reduce((s,q)=>s+(q.pr?.orp||0),0);
+  const avgORP = filtered.length ? Math.round(totalORP/filtered.length) : 0;
+  const todayCount = all.filter(q=>new Date(q.savedAt||0).toDateString()===now.toDateString()).length;
+  const monthCount = all.filter(thisMonth).length;
+
+  // Executive breakdown
+  const execMap = {};
+  all.forEach(q => {
+    const e = q.exec||"Unknown";
+    if (!execMap[e]) execMap[e] = { count:0, value:0 };
+    execMap[e].count++;
+    execMap[e].value += q.pr?.orp||0;
+  });
+  const execRows = Object.entries(execMap).sort((a,b)=>b[1].value-a[1].value);
+  const maxVal = execRows[0]?.[1]?.value || 1;
+
+  // Sync status
+  const hasSheetsConfig = GOOGLE_SHEETS_WEBHOOK && GOOGLE_SHEETS_WEBHOOK.length > 0;
+
+  const filterLabels = [["all","All Time"],["today","Today"],["month","This Month"],...EXECUTIVES.map(e=>[e.name,e.name.split(" ")[0]])];
+
+  document.getElementById("manager-body").innerHTML = `
+    <div class="sync-status">
+      <div class="sync-dot${hasSheetsConfig?"":" pending"}"></div>
+      <span>${hasSheetsConfig ? "Google Sheets sync active" : "Google Sheets not configured (see SETUP.md)"}</span>
+    </div>
+
+    <div class="mgr-stats">
+      <div class="mgr-stat"><div class="mgr-stat-v">${all.length}</div><div class="mgr-stat-l">Total Quotes</div></div>
+      <div class="mgr-stat"><div class="mgr-stat-v">${monthCount}</div><div class="mgr-stat-l">This Month</div></div>
+      <div class="mgr-stat"><div class="mgr-stat-v">${todayCount}</div><div class="mgr-stat-l">Today</div></div>
+      <div class="mgr-stat"><div class="mgr-stat-v">${totalORP>=1e7?`₹${(totalORP/1e7).toFixed(1)}Cr`:totalORP>=1e5?`₹${(totalORP/1e5).toFixed(0)}L`:`₹${Math.round(totalORP/1000)}K`}</div><div class="mgr-stat-l">Total Pipeline</div></div>
+    </div>
+
+    <div class="section-label">EXECUTIVE PERFORMANCE</div>
+    ${execRows.map(([name,d])=>`
+      <div class="mgr-exec-row">
+        <div class="mgr-exec-name">${name}</div>
+        <div class="mgr-bar-wrap">
+          <div class="mgr-bar-track"><div class="mgr-bar-fill" style="width:${Math.round(d.value/maxVal*100)}%"></div></div>
+        </div>
+        <div class="mgr-exec-meta">
+          <span>${d.count} quote${d.count!==1?"s":""}</span>
+          <span class="mgr-exec-value">${formatINR(d.value)}</span>
+        </div>
+      </div>`).join("")}
+
+    <div class="section-label" style="margin-top:18px">FILTER & VIEW ALL</div>
+    <div class="mgr-filter-row">
+      ${filterLabels.map(([v,l])=>`<button class="mgr-filter${mgrFilter===v?" active":""}" onclick="mgrFilter='${v}';renderManager()">${l}</button>`).join("")}
+    </div>
+
+    <div class="mgr-all-quotes">
+      ${filtered.length===0?`<div class="empty-state">No quotes in this filter.</div>`:
+        filtered.map(q=>`
+          <div class="qcard" onclick="openMgrQuote('${q.id}')">
+            <div class="qcard-top"><span class="qcard-name">${q.cust?.name||"—"}</span><span class="qcard-date">${q.date||""}</span></div>
+            <div class="qcard-vehicle">${q.veh?.model||""} · ${q.veh?.variant||""}</div>
+            <div class="qcard-bottom">
+              <span class="qcard-exec">${q.exec||"—"}</span>
+              <span class="qcard-price">${formatINR(q.pr?.orp)}</span>
+            </div>
+          </div>`).join("")}
+    </div>
+    <div style="height:28px"></div>`;
+}
+
+function openMgrQuote(id) {
+  const q = loadQuotes().find(x=>x.id===id);
+  if (!q) return;
+  currentQuote = q;
+  document.getElementById("preview-title").textContent = `#${q.id}`;
+  renderPreview(q);
+  goTo("preview");
+}
+
+// ============================================================
+// GOOGLE SHEETS SYNC
+// ============================================================
+async function syncToSheets(q) {
+  if (!GOOGLE_SHEETS_WEBHOOK) return;
+  try {
+    const payload = {
+      id: q.id, date: q.date, exec: q.exec,
+      customerName: q.cust.name, customerPhone: q.cust.phone, customerCity: q.cust.city,
+      model: q.veh.model, variant: q.veh.variant, color: q.veh.color,
+      exShowroom: q.pr.exS, accessories: q.pr.accT, tcs: q.pr.tcsA,
+      insurance: q.pr.ins, rto: q.pr.rto, handling: q.pr.hand,
+      fastag: q.pr.fastag||400, discount: q.pr.disc, onRoadPrice: q.pr.orp,
+      financeBank: q.fin?.bank||"", loanAmount: q.fin?.loan||0,
+      tenure: q.fin?.ten||0, downPayment: q.fin?.down||0,
+      notes: q.notes||"",
+    };
+    const resp = await fetch(GOOGLE_SHEETS_WEBHOOK, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (resp.ok) toast("☁️ Synced to Google Sheets");
+    else toast("⚠️ Sheet sync failed — saved locally");
+  } catch {
+    toast("📴 Offline — saved locally");
+  }
+}
+
+// ============================================================
+// INIT
+// ============================================================
+window.addEventListener("DOMContentLoaded", () => {
+  initLogin();
+  goTo("login");
+});
+</script>
+</body>
+</html>
