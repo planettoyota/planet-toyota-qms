@@ -1,148 +1,81 @@
-# Planet Toyota QMS — Setup Guide
-# ============================================================
+// ============================================================
+// PLANET TOYOTA QMS — DATA CONFIGURATION
+// Edit this file to update models, executives, prices, etc.
+// ============================================================
 
-## WHAT YOU HAVE
-A complete mobile-first web app with:
-- Executive PIN login (each executive has their own PIN)
-- Professional quotation builder with all Toyota models
-- Auto-calculated on-road price (ex-showroom + TCS + RTO + insurance + accessories)
-- PDF generation via browser Print dialog
-- WhatsApp sharing with full formatted message
-- Manager dashboard with executive-wise performance
-- Google Sheets auto-sync (setup below)
-- Works offline (PWA — add to phone home screen)
+const MODELS = [
+  { name: "Fortuner", variants: ["2.7 Petrol MT 4x2","2.7 Petrol AT 4x2","2.8 Diesel MT 4x4","2.8 Diesel AT 4x4","Legender 4x2 AT","Legender 4x4 AT"] },
+  { name: "Innova HyCross", variants: ["G MT","G Plus MT","VX MT","VX Plus AT","ZX AT","ZX Plus AT"] },
+  { name: "Innova Crysta", variants: ["G MT 7S","G AT 7S","VX MT 7S","VX AT 7S","ZX AT 7S"] },
+  { name: "Urban Cruiser Taisor", variants: ["E MT","S MT","G MT","V MT","V AT","S Plus MT","G Plus MT","V Plus AT"] },
+  { name: "Hyryder", variants: ["E MT","S MT","G MT","V MT","S AT","G AT","V AT","S Hybrid","G Hybrid","V Hybrid"] },
+  { name: "Glanza", variants: ["E MT","S MT","G MT","V MT","S AT","G AT","V AT"] },
+  { name: "Camry", variants: ["Hybrid AT"] },
+  { name: "Vellfire", variants: ["2.5 Hybrid AT"] },
+  { name: "Hilux", variants: ["Standard 4x4 MT","High 4x4 AT"] },
+];
 
----
+const COLORS = [
+  "White Pearl Crystal Shine","Platinum White Pearl","Attitude Black Mica",
+  "Sparkling Black Pearl Crystal Shine","Silver Metallic","Avant-Garde Bronze Metallic",
+  "Burning Red","Midnight Black","Celestial Blue","Emotional Red","Silky Gold Mica","Super White",
+];
 
-## HOW TO DEPLOY (Free Hosting via GitHub Pages)
+const ACCESSORIES = [
+  { name: "Body Cover", price: 1500 },
+  { name: "Floor Mats (Rubber)", price: 2500 },
+  { name: "Floor Mats (3D Premium)", price: 4500 },
+  { name: "Seat Covers (Fabric)", price: 6500 },
+  { name: "Seat Covers (Leatherette)", price: 12000 },
+  { name: "Mud Flaps Set", price: 1200 },
+  { name: "Door Edge Guards", price: 800 },
+  { name: "Door Visors", price: 2200 },
+  { name: "Reverse Parking Sensors", price: 4500 },
+  { name: "Reverse Camera", price: 5500 },
+  { name: "Dashcam (Front)", price: 4500 },
+  { name: "Dashcam (Front + Rear)", price: 7000 },
+  { name: "Alloy Wheels (Set of 4)", price: 35000 },
+  { name: "Roof Carrier", price: 8000 },
+  { name: "Side Steps / Running Board", price: 12000 },
+  { name: "Chrome Door Handles", price: 2800 },
+  { name: "Steering Cover", price: 900 },
+  { name: "Sun Shades (Set)", price: 1800 },
+];
 
-### Step 1 — Upload files
-1. Go to https://github.com and create a free account
-2. Create a new repository named: planet-toyota-qms
-3. Upload all files from this folder (maintain folder structure)
-4. Go to Settings → Pages → Source: main branch → Save
-5. Your URL will be: https://yourusername.github.io/planet-toyota-qms
+const FINANCE_BANKS = [
+  "Toyota Financial Services","HDFC Bank","SBI","ICICI Bank",
+  "Axis Bank","Kotak Mahindra Bank","Yes Bank","IDFC First Bank","PNB","Canara Bank",
+];
 
-### Step 2 — Add to phone home screen
-**Android (Chrome):**
-1. Open the URL in Chrome
-2. Tap the 3-dot menu → "Add to Home Screen"
-3. App icon appears on home screen
+// ============================================================
+// EXECUTIVES — Add/remove as needed
+// PIN must be exactly 4 digits (stored as string)
+// ============================================================
+const EXECUTIVES = [
+  { name: "Rahul Sharma",   pin: "1234" },
+  { name: "Amit Singh",     pin: "2345" },
+  { name: "Priya Verma",    pin: "3456" },
+  { name: "Suresh Kumar",   pin: "4567" },
+  { name: "Deepak Yadav",   pin: "5678" },
+  { name: "Kavita Devi",    pin: "6789" },
+];
 
-**iPhone (Safari):**
-1. Open the URL in Safari
-2. Tap Share button (box with arrow) → "Add to Home Screen"
+// ============================================================
+// MANAGER — separate PIN
+// ============================================================
+const MANAGER = { name: "Piyush (Owner)", pin: "0000" };
 
----
+// ============================================================
+// GOOGLE SHEETS WEBHOOK
+// Steps to set up:
+//   1. Open your Google Sheet
+//   2. Extensions → Apps Script
+//   3. Paste the Apps Script from SETUP.md
+//   4. Deploy as Web App → Anyone can access
+//   5. Copy the Web App URL and paste below
+// Leave blank to disable auto-sync (manual WhatsApp share still works)
+// ============================================================
+const GOOGLE_SHEETS_WEBHOOK = "";  // e.g. "https://script.google.com/macros/s/YOUR_ID/exec"
 
-## GOOGLE SHEETS SYNC SETUP
-
-### Step 1 — Create your Google Sheet
-1. Go to https://sheets.google.com
-2. Create a new sheet named: Planet Toyota Quotations
-3. Row 1 headers (copy exactly):
-   ID | Date | Executive | Customer Name | Phone | City | Model | Variant | Colour | Ex-Showroom | Accessories | TCS | Insurance | RTO | Handling | FASTag | Discount | On-Road Price | Finance Bank | Loan Amount | Tenure | Down Payment | Notes
-
-### Step 2 — Create Apps Script
-1. In your Google Sheet: Extensions → Apps Script
-2. Delete all existing code
-3. Paste this code:
-
-```javascript
-const SHEET_NAME = "Sheet1";
-
-function doPost(e) {
-  try {
-    const data = JSON.parse(e.postData.contents);
-    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
-    
-    // Add headers if sheet is empty
-    if (sheet.getLastRow() === 0) {
-      sheet.appendRow([
-        "Quote ID","Date","Executive","Customer Name","Phone","City",
-        "Model","Variant","Colour","Ex-Showroom","Accessories","TCS",
-        "Insurance","RTO","Handling","FASTag","Discount","On-Road Price",
-        "Finance Bank","Loan Amount","Tenure (months)","Down Payment","Notes"
-      ]);
-    }
-    
-    sheet.appendRow([
-      data.id, data.date, data.exec,
-      data.customerName, data.customerPhone, data.customerCity,
-      data.model, data.variant, data.color,
-      data.exShowroom, data.accessories, data.tcs,
-      data.insurance, data.rto, data.handling,
-      data.fastag, data.discount, data.onRoadPrice,
-      data.financeBank, data.loanAmount, data.tenure, data.downPayment,
-      data.notes
-    ]);
-    
-    return ContentService
-      .createTextOutput(JSON.stringify({status:"ok"}))
-      .setMimeType(ContentService.MimeType.JSON);
-  } catch(err) {
-    return ContentService
-      .createTextOutput(JSON.stringify({status:"error",msg:err.toString()}))
-      .setMimeType(ContentService.MimeType.JSON);
-  }
-}
-```
-
-### Step 3 — Deploy
-1. Click "Deploy" → "New deployment"
-2. Type: Web App
-3. Execute as: Me
-4. Who has access: Anyone
-5. Click Deploy → Copy the Web App URL
-
-### Step 4 — Add URL to app
-1. Open js/data.js
-2. Find: const GOOGLE_SHEETS_WEBHOOK = "";
-3. Replace with: const GOOGLE_SHEETS_WEBHOOK = "YOUR_WEB_APP_URL_HERE";
-4. Re-upload data.js to GitHub
-
-Done! Every new quotation will auto-appear in your Google Sheet.
-
----
-
-## CUSTOMISATION
-
-### Change executive PINs
-Open js/data.js → find EXECUTIVES array → change pin values
-
-### Add new executives
-Open js/data.js → add new entry to EXECUTIVES:
-{ name: "New Name", pin: "1234" }
-
-### Change manager PIN
-Open js/data.js → find MANAGER → change pin value
-DEFAULT MANAGER PIN: 0000 (change this immediately!)
-
-### Add/remove models or variants
-Open js/data.js → edit the MODELS array
-
-### Add accessories
-Open js/data.js → edit the ACCESSORIES array
-
----
-
-## DAILY USAGE FLOW
-
-1. Executive opens app on phone → selects name → enters PIN
-2. Taps "+ New Quotation"
-3. Fills customer details + vehicle + pricing
-4. Taps "Generate Quotation"
-5. Chooses:
-   - "Print / Save as PDF" → phone downloads PDF → can email or share
-   - "Share via WhatsApp" → opens WhatsApp with full quote message
-
-Manager: Opens app → enters manager PIN → sees all quotes, executive-wise performance, total pipeline
-
----
-
-## ICONS (Required for PWA)
-You need to add icon images to the /icons/ folder:
-- icon-192.png (192×192 pixels) — Toyota logo / Planet Toyota logo
-- icon-512.png (512×512 pixels) — same logo, larger
-
-You can create these at https://www.canva.com using your dealership branding.
+// Storage key
+const SK = "pt_qms_v2";
