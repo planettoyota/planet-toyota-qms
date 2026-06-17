@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>PT Debug</title>
+</head>
+<body>
+<h2>Planet Toyota — Debug Test</h2>
+<p id="status">Loading...</p>
+<select id="test-select" style="font-size:16px;padding:8px;width:100%">
+  <option>— Loading —</option>
+</select>
+<div id="output" style="margin-top:20px;font-family:monospace;font-size:12px;white-space:pre-wrap"></div>
+
+<script>
+const ROLE = { EXEC:"Guest Experience Manager", TL:"Team Leader", SM:"Sales Manager", GM:"GM Sales", OWNER:"Owner" };
+const STAFF_KEY = "pt_staff_v2";
+
+const DEFAULT_STAFF = [
+  { id:"u01", name:"Piyush (Owner)",    role:ROLE.OWNER, pin:"6022", teamId:null },
+  { id:"u02", name:"Vikas Kumar",       role:ROLE.GM,    pin:"9090", teamId:null },
+  { id:"u03", name:"Nilesh Kumar",      role:ROLE.SM,    pin:"1331", teamId:null },
+  { id:"u04", name:"Ashok Yadav",       role:ROLE.TL,    pin:"9999", teamId:"T1" },
+  { id:"u05", name:"Pritam Yadav",      role:ROLE.TL,    pin:"2222", teamId:"T2" },
+  { id:"u06", name:"Surender Kumar",    role:ROLE.EXEC,  pin:"6699", teamId:"T1" },
+  { id:"u07", name:"Nitin Kumar",       role:ROLE.EXEC,  pin:"7799", teamId:"T1" },
+  { id:"u08", name:"Amit Kumar",        role:ROLE.EXEC,  pin:"8899", teamId:"T1" },
+  { id:"u09", name:"Bishan Saini",      role:ROLE.EXEC,  pin:"5522", teamId:"T2" },
+  { id:"u10", name:"Vikas Kumar",       role:ROLE.EXEC,  pin:"4422", teamId:"T2" },
+  { id:"u11", name:"Navneet Singh",     role:ROLE.EXEC,  pin:"3322", teamId:"T2" },
+];
+
+function loadStaff() {
+  try {
+    // Clear old keys first
+    localStorage.removeItem("pt_staff_v1");
+    const s = localStorage.getItem(STAFF_KEY);
+    if (s) return JSON.parse(s);
+  } catch(e) {
+    document.getElementById('output').textContent += "\nloadStaff error: " + e;
+  }
+  localStorage.setItem(STAFF_KEY, JSON.stringify(DEFAULT_STAFF));
+  return DEFAULT_STAFF;
+}
+
+window.addEventListener('DOMContentLoaded', function() {
+  try {
+    const staff = loadStaff();
+    const sel = document.getElementById('test-select');
+    sel.innerHTML = '<option value="">— Select Your Name —</option>';
+    staff.forEach(function(s) {
+      const o = document.createElement('option');
+      o.value = s.id;
+      o.textContent = s.name + ' (' + s.role + ')';
+      sel.appendChild(o);
+    });
+    document.getElementById('status').textContent = '✅ Loaded ' + staff.length + ' staff members';
+    document.getElementById('output').textContent = JSON.stringify(staff, null, 2);
+  } catch(e) {
+    document.getElementById('status').textContent = '❌ Error: ' + e.message;
+    document.getElementById('output').textContent = e.stack;
+  }
+});
+</script>
+</body>
+</html>
