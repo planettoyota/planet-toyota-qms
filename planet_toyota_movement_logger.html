@@ -1,0 +1,1197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#EB0A1E">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="PT Tracker">
+<title>Planet Toyota — Vehicle Tracker</title>
+
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  :root {
+    --red: #EB0A1E;
+    --dark: #1A1A2E;
+    --white: #FFFFFF;
+    --gray: #F2F2F2;
+    --green: #28A745;
+    --amber: #FFC107;
+    --blue: #17A2B8;
+    --text: #333333;
+    --light: #F8F9FA;
+    --border: #E0E0E0;
+    --shadow: 0 2px 12px rgba(0,0,0,0.12);
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #F0F0F0;
+    color: var(--text);
+    min-height: 100vh;
+    padding-bottom: 40px;
+  }
+
+  /* ── HEADER ── */
+  .header {
+    background: var(--red);
+    padding: 14px 16px 12px;
+    position: sticky; top: 0; z-index: 100;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  }
+  .header-top { display: flex; align-items: center; justify-content: space-between; }
+  .header h1 { color: white; font-size: 17px; font-weight: 700; letter-spacing: 0.3px; }
+  .header p  { color: rgba(255,255,255,0.8); font-size: 11px; margin-top: 2px; }
+  .toyota-badge {
+    background: white; color: var(--red);
+    font-size: 9px; font-weight: 800;
+    padding: 3px 7px; border-radius: 10px;
+    letter-spacing: 1px;
+  }
+
+  /* ── SCREENS ── */
+  .screen { display: none; padding: 16px; }
+  .screen.active { display: block; }
+
+  /* ── CARD ── */
+  .card {
+    background: white; border-radius: 14px;
+    padding: 18px; margin-bottom: 14px;
+    box-shadow: var(--shadow);
+  }
+  .card-title {
+    font-size: 11px; font-weight: 700;
+    color: var(--red); text-transform: uppercase;
+    letter-spacing: 0.8px; margin-bottom: 12px;
+    display: flex; align-items: center; gap: 6px;
+  }
+
+  /* ── BUTTONS ── */
+  .btn {
+    width: 100%; padding: 15px;
+    border: none; border-radius: 12px;
+    font-size: 15px; font-weight: 700;
+    cursor: pointer; transition: all 0.18s;
+    display: flex; align-items: center;
+    justify-content: center; gap: 8px;
+  }
+  .btn:active { transform: scale(0.97); opacity: 0.9; }
+  .btn-red    { background: var(--red);   color: white; }
+  .btn-dark   { background: var(--dark);  color: white; }
+  .btn-green  { background: var(--green); color: white; }
+  .btn-outline {
+    background: transparent; color: var(--red);
+    border: 2px solid var(--red);
+  }
+  .btn-gray   { background: var(--gray); color: var(--text); }
+  .btn-sm {
+    padding: 10px 14px; font-size: 13px;
+    border-radius: 8px; width: auto;
+  }
+
+  /* ── SCAN AREA ── */
+  .scan-box {
+    background: var(--dark);
+    border-radius: 14px; overflow: hidden;
+    margin-bottom: 14px; position: relative;
+    min-height: 260px;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+  }
+  #qr-reader { width: 100% !important; }
+  #qr-reader video { border-radius: 0 !important; }
+  #qr-reader img { display: none; }
+  .scan-overlay {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    color: rgba(255,255,255,0.9);
+    pointer-events: none;
+  }
+  .scan-frame {
+    width: 180px; height: 180px;
+    border: 3px solid var(--red);
+    border-radius: 16px;
+    box-shadow: 0 0 0 2000px rgba(0,0,0,0.35);
+    position: relative;
+  }
+  .scan-frame::before, .scan-frame::after {
+    content: ''; position: absolute;
+    width: 28px; height: 28px;
+  }
+  .scan-frame::before {
+    top: -3px; left: -3px;
+    border-top: 4px solid var(--red);
+    border-left: 4px solid var(--red);
+    border-radius: 10px 0 0 0;
+  }
+  .scan-label {
+    color: white; font-size: 12px;
+    margin-top: 14px; font-weight: 600;
+    background: rgba(0,0,0,0.4);
+    padding: 5px 14px; border-radius: 20px;
+  }
+
+  /* ── DIVIDER ── */
+  .divider {
+    display: flex; align-items: center;
+    gap: 10px; margin: 14px 0; color: #aaa; font-size: 12px;
+  }
+  .divider::before, .divider::after {
+    content: ''; flex: 1; height: 1px; background: var(--border);
+  }
+
+  /* ── INPUT ── */
+  .input-group { margin-bottom: 14px; }
+  .input-label {
+    font-size: 11px; font-weight: 700;
+    color: #666; text-transform: uppercase;
+    letter-spacing: 0.6px; margin-bottom: 6px; display: block;
+  }
+  .input-field {
+    width: 100%; padding: 13px 14px;
+    border: 2px solid var(--border); border-radius: 10px;
+    font-size: 15px; color: var(--text);
+    background: var(--light); transition: border-color 0.2s;
+    -webkit-appearance: none;
+  }
+  .input-field:focus {
+    outline: none; border-color: var(--red);
+    background: white;
+  }
+  .input-field.success { border-color: var(--green); }
+  .input-with-btn { display: flex; gap: 8px; }
+  .input-with-btn .input-field { flex: 1; }
+
+  /* ── VEHICLE INFO CARD ── */
+  .vehicle-card {
+    background: linear-gradient(135deg, var(--dark) 0%, #2d2d4e 100%);
+    border-radius: 14px; padding: 16px;
+    margin-bottom: 14px; color: white;
+    box-shadow: var(--shadow);
+  }
+  .vehicle-card .model { font-size: 18px; font-weight: 800; }
+  .vehicle-card .variant { font-size: 13px; color: rgba(255,255,255,0.7); margin-top: 2px; }
+  .vehicle-card .tags { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+  .tag {
+    background: rgba(255,255,255,0.12);
+    padding: 4px 10px; border-radius: 20px;
+    font-size: 11px; font-weight: 600;
+  }
+  .tag.suffix { background: var(--red); }
+  .tag.location { background: rgba(255,255,255,0.18); }
+  .chassis-no {
+    font-size: 11px; color: rgba(255,255,255,0.5);
+    margin-top: 8px; font-family: monospace;
+    letter-spacing: 1px;
+  }
+
+  /* ── LOCATION BUTTONS ── */
+  .location-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 10px; margin-bottom: 6px;
+  }
+  .location-btn {
+    padding: 18px 10px; border-radius: 12px;
+    border: 2px solid var(--border);
+    background: white; cursor: pointer;
+    text-align: center; transition: all 0.18s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .location-btn:active { transform: scale(0.96); }
+  .location-btn .loc-icon { font-size: 28px; margin-bottom: 6px; }
+  .location-btn .loc-name { font-size: 13px; font-weight: 700; color: var(--text); }
+  .location-btn .loc-sub  { font-size: 10px; color: #999; margin-top: 2px; }
+  .location-btn.selected  {
+    border-color: var(--red); background: #FFF0F0;
+  }
+  .location-btn.selected .loc-name { color: var(--red); }
+  .location-btn.current-loc {
+    opacity: 0.4; pointer-events: none;
+    background: var(--gray);
+  }
+  .location-btn-full {
+    grid-column: 1 / -1;
+  }
+
+  /* ── DELIVER BUTTON ── */
+  .deliver-section {
+    border: 2px dashed var(--border); border-radius: 12px;
+    padding: 14px; margin-top: 4px;
+    background: var(--light);
+  }
+  .deliver-title {
+    font-size: 12px; font-weight: 700; color: #666;
+    margin-bottom: 10px; display: flex; align-items: center; gap: 5px;
+  }
+
+  /* ── SUCCESS SCREEN ── */
+  .success-icon {
+    width: 72px; height: 72px; border-radius: 50%;
+    background: var(--green); display: flex;
+    align-items: center; justify-content: center;
+    font-size: 36px; margin: 0 auto 16px;
+  }
+  .success-title { font-size: 22px; font-weight: 800; text-align: center; color: var(--dark); }
+  .success-sub   { font-size: 14px; color: #666; text-align: center; margin-top: 6px; }
+  .success-detail {
+    background: var(--light); border-radius: 10px;
+    padding: 14px; margin-top: 16px;
+  }
+  .detail-row {
+    display: flex; justify-content: space-between;
+    padding: 6px 0; border-bottom: 1px solid var(--border);
+    font-size: 13px;
+  }
+  .detail-row:last-child { border-bottom: none; }
+  .detail-row .key   { color: #888; }
+  .detail-row .value { font-weight: 700; color: var(--dark); }
+
+  /* ── ALERT / ERROR ── */
+  .alert {
+    border-radius: 10px; padding: 12px 14px;
+    font-size: 13px; margin-bottom: 12px;
+    display: flex; align-items: flex-start; gap: 8px;
+  }
+  .alert-error  { background: #FDE8EA; color: #C0392B; border-left: 4px solid var(--red); }
+  .alert-warn   { background: #FFF3CD; color: #856404; border-left: 4px solid var(--amber); }
+  .alert-info   { background: #D1ECF1; color: #0C5460; border-left: 4px solid var(--blue); }
+  .alert-success{ background: #D4EDDA; color: #155724; border-left: 4px solid var(--green); }
+
+  /* ── LOADER ── */
+  .loader-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.45);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    z-index: 999; display: none;
+  }
+  .loader-overlay.show { display: flex; }
+  .spinner {
+    width: 48px; height: 48px;
+    border: 4px solid rgba(255,255,255,0.2);
+    border-top-color: white; border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  .loader-text { color: white; font-size: 14px; font-weight: 600; margin-top: 14px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── MODAL ── */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+    display: none; align-items: flex-end; justify-content: center;
+    z-index: 200; padding: 0;
+  }
+  .modal-overlay.show { display: flex; }
+  .modal {
+    background: white; border-radius: 20px 20px 0 0;
+    padding: 20px 20px 36px; width: 100%;
+    max-width: 480px;
+    animation: slideUp 0.25s ease-out;
+  }
+  @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+  .modal-handle {
+    width: 36px; height: 4px; background: #ddd;
+    border-radius: 2px; margin: 0 auto 16px;
+  }
+  .modal-title { font-size: 17px; font-weight: 800; margin-bottom: 14px; color: var(--dark); }
+
+  /* ── MISC ── */
+  .text-center { text-align: center; }
+  .mt-10 { margin-top: 10px; }
+  .mt-14 { margin-top: 14px; }
+  .gap-10 { display: flex; gap: 10px; }
+  .badge {
+    display: inline-block; padding: 3px 10px;
+    border-radius: 20px; font-size: 11px; font-weight: 700;
+  }
+  .badge-green { background: #D4EDDA; color: #155724; }
+  .badge-red   { background: #FDE8EA; color: var(--red); }
+  .badge-amber { background: #FFF3CD; color: #856404; }
+
+  /* ── HISTORY PILL ── */
+  .history-item {
+    background: var(--light); border-radius: 10px;
+    padding: 10px 12px; margin-bottom: 8px;
+    border-left: 3px solid var(--red);
+  }
+  .history-item .hi-model { font-size: 13px; font-weight: 700; }
+  .history-item .hi-move  { font-size: 11px; color: #666; margin-top: 3px; }
+  .history-item .hi-time  { font-size: 10px; color: #aaa; margin-top: 2px; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-top">
+    <div>
+      <h1>🚗 Planet Toyota</h1>
+      <p>Vehicle Movement Tracker</p>
+    </div>
+    <span class="toyota-badge">NARNAUL</span>
+  </div>
+</div>
+
+<!-- LOADER -->
+<div class="loader-overlay" id="loader">
+  <div class="spinner"></div>
+  <div class="loader-text" id="loaderText">Please wait...</div>
+</div>
+
+<!-- ══════════════════════════════════════════ -->
+<!-- SCREEN 1: HOME — SCAN OR ENTER CHASSIS   -->
+<!-- ══════════════════════════════════════════ -->
+<div class="screen active" id="screen-home">
+  <div class="card" style="margin-top:4px">
+    <div class="card-title">📷 Scan Vehicle QR Code</div>
+
+    <!-- METHOD 1: Native camera stream scanner -->
+    <div id="scanBox" style="display:none;position:relative;border-radius:12px;overflow:hidden;background:#000;margin-bottom:10px">
+      <video id="scanVideo" style="width:100%;display:block;max-height:280px;object-fit:cover" playsinline autoplay muted></video>
+      <canvas id="scanCanvas" style="display:none"></canvas>
+      <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none">
+        <div style="width:200px;height:200px;border:3px solid #EB0A1E;border-radius:16px;box-shadow:0 0 0 2000px rgba(0,0,0,0.35)"></div>
+      </div>
+      <div style="position:absolute;bottom:10px;left:0;right:0;text-align:center">
+        <span style="background:rgba(0,0,0,0.5);color:white;font-size:12px;padding:4px 14px;border-radius:20px;font-weight:600">
+          Point at TKM QR code on windshield
+        </span>
+      </div>
+    </div>
+    <div id="scanStatus" style="display:none" class="alert alert-info">📷 Scanning... hold steady over the QR code</div>
+
+    <button class="btn btn-red" id="btnStartScan" onclick="startScan()">
+      📷 Scan QR Code
+    </button>
+    <button class="btn btn-gray mt-10" id="btnStopScan" onclick="stopScan()" style="display:none">
+      ✕ Stop Scanner
+    </button>
+  </div>
+
+  <div class="divider">OR ENTER MANUALLY</div>
+
+  <div class="card">
+    <div class="card-title">⌨️ Enter Chassis Number</div>
+    <div class="alert alert-info">
+      💡 Use this if the QR code on the windshield is damaged or unreadable.
+    </div>
+    <div class="input-group">
+      <label class="input-label">Chassis Number</label>
+      <div class="input-with-btn">
+        <input class="input-field" id="chassisInput" type="text"
+          placeholder="e.g. MA3XXXXXX1234567"
+          style="text-transform:uppercase; letter-spacing:1px"
+          oninput="this.value=this.value.toUpperCase()"
+          onkeydown="if(event.key==='Enter') lookupChassis()">
+        <button class="btn btn-red btn-sm" onclick="lookupChassis()">🔍 Find</button>
+      </div>
+    </div>
+    <div id="homeError"></div>
+  </div>
+
+  <div class="card" id="recentCard" style="display:none">
+    <div class="card-title">🕐 Recent Movements</div>
+    <div id="recentList"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════ -->
+<!-- SCREEN 2: VEHICLE FOUND — LOG MOVEMENT   -->
+<!-- ══════════════════════════════════════════ -->
+<div class="screen" id="screen-vehicle">
+
+  <div class="vehicle-card" id="vehicleCard">
+    <div class="model" id="vModel">—</div>
+    <div class="variant" id="vVariant">—</div>
+    <div class="tags">
+      <span class="tag suffix" id="vSuffix">—</span>
+      <span class="tag" id="vFuel">—</span>
+      <span class="tag" id="vColour">—</span>
+      <span class="tag location" id="vLocation">📍 —</span>
+    </div>
+    <div class="chassis-no" id="vChassis">—</div>
+  </div>
+
+  <div id="vehicleAlerts"></div>
+
+  <div class="card">
+    <div class="card-title">📍 Move To Location</div>
+    <div class="location-grid" id="locationGrid">
+      <div class="location-btn" id="locStockyard" onclick="selectLocation('Stockyard')">
+        <div class="loc-icon">🅿️</div>
+        <div class="loc-name">Stockyard</div>
+        <div class="loc-sub">Main yard</div>
+      </div>
+      <div class="location-btn" id="locWorkshop" onclick="selectLocation('Workshop')">
+        <div class="loc-icon">🔧</div>
+        <div class="loc-name">Workshop</div>
+        <div class="loc-sub">PDI / service</div>
+      </div>
+      <div class="location-btn location-btn-full" id="locShowroom" onclick="selectLocation('Showroom')">
+        <div class="loc-icon">🏢</div>
+        <div class="loc-name">Showroom</div>
+        <div class="loc-sub">Display / customer</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">👤 Staff Details</div>
+    <div class="input-group">
+      <label class="input-label">Your Name <span style="color:var(--red)">*</span></label>
+      <input class="input-field" id="staffName" type="text"
+        placeholder="Enter your name"
+        autocomplete="name">
+    </div>
+    <div class="input-group">
+      <label class="input-label">Remarks (optional)</label>
+      <input class="input-field" id="movementRemarks" type="text"
+        placeholder="e.g. Sent for PDI, Customer viewing...">
+    </div>
+    <div id="moveError" style="margin-bottom:8px"></div>
+    <button class="btn btn-green" onclick="confirmMovement()">
+      ✅ Confirm Movement
+    </button>
+    <button class="btn btn-outline mt-10" onclick="goHome()">
+      ← Back
+    </button>
+  </div>
+
+  <!-- DELIVER SECTION -->
+  <div class="card">
+    <div class="deliver-section">
+      <div class="deliver-title">🤝 Mark as Delivered to Customer</div>
+      <p style="font-size:12px;color:#888;margin-bottom:10px">
+        This will permanently remove the vehicle from all stock reports.
+      </p>
+      <button class="btn btn-dark btn-sm" onclick="openDeliveryModal()" style="width:100%">
+        🎉 Deliver to Customer
+      </button>
+    </div>
+  </div>
+
+</div>
+
+<!-- ══════════════════════════════════════════ -->
+<!-- SCREEN 3: NOT FOUND — NEW ARRIVAL        -->
+<!-- ══════════════════════════════════════════ -->
+<div class="screen" id="screen-notfound">
+  <div class="card" style="margin-top:4px">
+    <div class="alert alert-warn">
+      ⚠️ Chassis <strong id="nfChassis">—</strong> not found in Vehicle Master.
+      This may be a new arrival from TKM. Please register it below.
+    </div>
+    <div class="card-title">➕ Register New Vehicle Arrival</div>
+
+    <div class="input-group">
+      <label class="input-label">Chassis Number</label>
+      <input class="input-field success" id="nfChassisDisplay" readonly>
+    </div>
+    <div class="input-group">
+      <label class="input-label">Model <span style="color:var(--red)">*</span></label>
+      <select class="input-field" id="nfModel" onchange="loadVariants()">
+        <option value="">— Select Model —</option>
+      </select>
+    </div>
+    <div class="input-group">
+      <label class="input-label">Variant <span style="color:var(--red)">*</span></label>
+      <select class="input-field" id="nfVariant" onchange="loadFuels()">
+        <option value="">— Select Variant —</option>
+      </select>
+    </div>
+    <div class="input-group">
+      <label class="input-label">Fuel Type <span style="color:var(--red)">*</span></label>
+      <select class="input-field" id="nfFuel" onchange="loadColours()">
+        <option value="">— Select Fuel Type —</option>
+      </select>
+    </div>
+    <div class="input-group">
+      <label class="input-label">Colour <span style="color:var(--red)">*</span></label>
+      <select class="input-field" id="nfColour" onchange="loadInteriors()">
+        <option value="">— Select Colour —</option>
+      </select>
+    </div>
+    <div class="input-group">
+      <label class="input-label">Interior <span style="color:var(--red)">*</span></label>
+      <select class="input-field" id="nfInterior" onchange="autoFillSuffix()">
+        <option value="">— Select Interior —</option>
+      </select>
+    </div>
+    <div class="input-group">
+      <label class="input-label">Suffix Code (auto-filled)</label>
+      <input class="input-field success" id="nfSuffix" readonly placeholder="Auto-fills on selection">
+    </div>
+    <div class="input-group">
+      <label class="input-label">TKM Dispatch Date</label>
+      <input class="input-field" id="nfDispatch" type="date">
+    </div>
+    <div class="input-group">
+      <label class="input-label">Received By <span style="color:var(--red)">*</span></label>
+      <input class="input-field" id="nfReceivedBy" type="text" placeholder="Enter your name">
+    </div>
+
+    <div id="nfError" style="margin-bottom:10px"></div>
+
+    <button class="btn btn-green" onclick="registerNewVehicle()">
+      ✅ Add to Vehicle Master & Log Arrival
+    </button>
+    <button class="btn btn-outline mt-10" onclick="goHome()">
+      ← Back
+    </button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════ -->
+<!-- SCREEN 4: SUCCESS                        -->
+<!-- ══════════════════════════════════════════ -->
+<div class="screen" id="screen-success">
+  <div class="card" style="margin-top: 24px; text-align:center; padding: 32px 20px">
+    <div class="success-icon" id="successIcon">✅</div>
+    <div class="success-title" id="successTitle">Movement Logged!</div>
+    <div class="success-sub"  id="successSub">Details saved successfully.</div>
+
+    <div class="success-detail" id="successDetail"></div>
+
+    <button class="btn btn-red mt-14" onclick="goHome()">
+      🔄 Log Another Movement
+    </button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════ -->
+<!-- MODAL: DELIVERY CONFIRMATION             -->
+<!-- ══════════════════════════════════════════ -->
+<div class="modal-overlay" id="deliveryModal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">🤝 Delivery Confirmation</div>
+
+    <div class="alert alert-warn" style="margin-bottom:14px">
+      ⚠️ This will <strong>permanently remove</strong> the vehicle from all stock reports.
+      This action cannot be undone.
+    </div>
+
+    <div class="vehicle-card" id="deliveryVehicleCard" style="margin-bottom:14px">
+      <div class="model" id="dvModel">—</div>
+      <div class="variant" id="dvVariant">—</div>
+      <div class="chassis-no" id="dvChassis">—</div>
+    </div>
+
+    <div class="input-group">
+      <label class="input-label">Customer Name <span style="color:var(--red)">*</span></label>
+      <input class="input-field" id="customerName" type="text" placeholder="Full name of buyer">
+    </div>
+    <div class="input-group">
+      <label class="input-label">Invoice Number <span style="color:var(--red)">*</span></label>
+      <input class="input-field" id="invoiceNo" type="text" placeholder="e.g. INV-2026-1234">
+    </div>
+    <div class="input-group">
+      <label class="input-label">Delivered By <span style="color:var(--red)">*</span></label>
+      <input class="input-field" id="deliveredBy" type="text" placeholder="Your name">
+    </div>
+    <div class="input-group">
+      <label class="input-label">Remarks</label>
+      <input class="input-field" id="deliveryRemarks" type="text" placeholder="Optional">
+    </div>
+
+    <div id="deliveryError" style="margin-bottom:10px"></div>
+
+    <div class="gap-10">
+      <button class="btn btn-gray" style="flex:1" onclick="closeDeliveryModal()">Cancel</button>
+      <button class="btn btn-green" style="flex:2" onclick="confirmDelivery()">
+        ✅ Confirm Delivery
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════ -->
+<!-- JAVASCRIPT                               -->
+<!-- ══════════════════════════════════════════ -->
+<script>
+// ── CONFIG ───────────────────────────────────────────────────────
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby-8vki1VvkSMsItnw4Rdc7fRVZYSDu47zb55hvssuLquGe3YFng4jpsGEB38m-vviouA/exec'; // Replace after deploying
+const STOCK_SHEET_ID  = '1x44oP8R7qzuoIiG9m9NhDXFagcitZwF--ZDhezcb39c';
+
+// ── STATE ────────────────────────────────────────────────────────
+let currentVehicle   = null;
+let selectedLocation = null;
+// Scanner managed by startScan/stopScan
+let suffixData       = [];
+let recentMovements  = JSON.parse(localStorage.getItem('pt_recent') || '[]');
+
+// ── ON LOAD ──────────────────────────────────────────────────────
+window.onload = async () => {
+  loadRecentMovements();
+  await loadSuffixData();
+  populateModelDropdown();
+  // Set today's date as default dispatch date
+  document.getElementById('nfDispatch').value = new Date().toISOString().split('T')[0];
+};
+
+// ── RECENT MOVEMENTS ─────────────────────────────────────────────
+function loadRecentMovements() {
+  if (recentMovements.length === 0) return;
+  document.getElementById('recentCard').style.display = 'block';
+  const list = document.getElementById('recentList');
+  list.innerHTML = recentMovements.slice(0,5).map(m => `
+    <div class="history-item">
+      <div class="hi-model">${m.model} ${m.variant} — <span style="color:var(--red);font-size:11px">${m.suffix}</span></div>
+      <div class="hi-move">📍 ${m.from} → <strong>${m.to}</strong> &nbsp;|&nbsp; ${m.staff}</div>
+      <div class="hi-time">${m.time}</div>
+    </div>
+  `).join('');
+}
+
+function saveToRecent(data) {
+  recentMovements.unshift({
+    model: data.model, variant: data.variant,
+    suffix: data.suffix, from: data.from,
+    to: data.to, staff: data.staff,
+    time: new Date().toLocaleString('en-IN', { hour:'2-digit', minute:'2-digit', day:'2-digit', month:'short' })
+  });
+  recentMovements = recentMovements.slice(0,10);
+  localStorage.setItem('pt_recent', JSON.stringify(recentMovements));
+}
+
+// ── LOAD SUFFIX DATA (from Google Sheets JSONP) ──────────────────
+async function loadSuffixData() {
+  try {
+    // Fetch suffix data via Apps Script (avoids CORS issues with direct Sheet access)
+    const url = APPS_SCRIPT_URL + '?action=getSuffixData';
+    const res  = await fetch(url);
+    const data = await res.json();
+
+    if (data.success && data.rows) {
+      suffixData = data.rows;
+      console.log('✅ Loaded', suffixData.length, 'suffix codes via Apps Script');
+    } else {
+      throw new Error(data.error || 'No data returned');
+    }
+  } catch(e) {
+    console.warn('Could not load suffix data:', e);
+    // Show user-friendly message
+    document.getElementById('homeError').innerHTML = `
+      <div class="alert alert-warn">
+        ⚠️ Could not load vehicle data. Please check your internet connection and refresh the page.
+      </div>`;
+  }
+}
+
+// ── CASCADING DROPDOWNS ──────────────────────────────────────────
+function populateModelDropdown() {
+  const models = [...new Set(suffixData.map(r => r.model))].sort();
+  const sel = document.getElementById('nfModel');
+  sel.innerHTML = '<option value="">— Select Model —</option>' +
+    models.map(m => `<option value="${m}">${m}</option>`).join('');
+}
+
+function loadVariants() {
+  const model = document.getElementById('nfModel').value;
+  const variants = [...new Set(suffixData.filter(r => r.model === model).map(r => r.variant))].sort();
+  const sel = document.getElementById('nfVariant');
+  sel.innerHTML = '<option value="">— Select Variant —</option>' +
+    variants.map(v => `<option value="${v}">${v}</option>`).join('');
+  document.getElementById('nfFuel').innerHTML     = '<option value="">— Select Fuel Type —</option>';
+  document.getElementById('nfColour').innerHTML   = '<option value="">— Select Colour —</option>';
+  document.getElementById('nfInterior').innerHTML = '<option value="">— Select Interior —</option>';
+  document.getElementById('nfSuffix').value = '';
+}
+
+function loadFuels() {
+  const model = document.getElementById('nfModel').value;
+  const variant = document.getElementById('nfVariant').value;
+  const fuels = [...new Set(suffixData.filter(r => r.model===model && r.variant===variant).map(r => r.fuel))].sort();
+  const sel = document.getElementById('nfFuel');
+  sel.innerHTML = '<option value="">— Select Fuel Type —</option>' +
+    fuels.map(f => `<option value="${f}">${f}</option>`).join('');
+  document.getElementById('nfColour').innerHTML   = '<option value="">— Select Colour —</option>';
+  document.getElementById('nfInterior').innerHTML = '<option value="">— Select Interior —</option>';
+  document.getElementById('nfSuffix').value = '';
+}
+
+function loadColours() {
+  const model = document.getElementById('nfModel').value;
+  const variant = document.getElementById('nfVariant').value;
+  const fuel = document.getElementById('nfFuel').value;
+  const colours = [...new Set(suffixData.filter(r=>r.model===model&&r.variant===variant&&r.fuel===fuel).map(r=>r.colour))].sort();
+  const sel = document.getElementById('nfColour');
+  sel.innerHTML = '<option value="">— Select Colour —</option>' +
+    colours.map(c => `<option value="${c}">${c}</option>`).join('');
+  document.getElementById('nfInterior').innerHTML = '<option value="">— Select Interior —</option>';
+  document.getElementById('nfSuffix').value = '';
+}
+
+function loadInteriors() {
+  const model = document.getElementById('nfModel').value;
+  const variant = document.getElementById('nfVariant').value;
+  const fuel = document.getElementById('nfFuel').value;
+  const colour = document.getElementById('nfColour').value;
+  const interiors = [...new Set(suffixData.filter(r=>r.model===model&&r.variant===variant&&r.fuel===fuel&&r.colour===colour).map(r=>r.interior))].sort();
+  const sel = document.getElementById('nfInterior');
+  sel.innerHTML = '<option value="">— Select Interior —</option>' +
+    interiors.map(i => `<option value="${i || '—'}">${i || '(None)'}</option>`).join('');
+  document.getElementById('nfSuffix').value = '';
+}
+
+function autoFillSuffix() {
+  const model = document.getElementById('nfModel').value;
+  const variant = document.getElementById('nfVariant').value;
+  const fuel = document.getElementById('nfFuel').value;
+  const colour = document.getElementById('nfColour').value;
+  const interior = document.getElementById('nfInterior').value;
+  const match = suffixData.find(r =>
+    r.model===model && r.variant===variant && r.fuel===fuel &&
+    r.colour===colour && (r.interior===interior || (!r.interior && interior==='—'))
+  );
+  document.getElementById('nfSuffix').value = match ? match.suffix : '— Not found —';
+  if (match) document.getElementById('nfSuffix').style.borderColor = 'var(--green)';
+  else document.getElementById('nfSuffix').style.borderColor = 'var(--red)';
+}
+
+// ── QR SCANNER (Multi-method) ────────────────────────────────────
+let scanStream    = null;
+let scanInterval  = null;
+let barcodeReader = null;
+
+async function startScan() {
+  clearError('homeError');
+  document.getElementById('btnStartScan').style.display = 'none';
+  document.getElementById('btnStopScan').style.display  = 'block';
+  document.getElementById('scanBox').style.display      = 'block';
+  document.getElementById('scanStatus').style.display   = 'block';
+
+  try {
+    // Request rear camera
+    scanStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } }
+    });
+
+    const video = document.getElementById('scanVideo');
+    video.srcObject = scanStream;
+    await video.play();
+
+    // Try native BarcodeDetector first (Android Chrome, Samsung Browser)
+    if ('BarcodeDetector' in window) {
+      barcodeReader = new BarcodeDetector({ formats: ['qr_code','code_128','code_39','data_matrix'] });
+      scanInterval = setInterval(async () => {
+        try {
+          const codes = await barcodeReader.detect(video);
+          if (codes.length > 0) {
+            const chassis = extractChassis(codes[0].rawValue);
+            stopScan();
+            document.getElementById('chassisInput').value = chassis;
+            lookupChassis(chassis);
+          }
+        } catch(e) {}
+      }, 300);
+    } else {
+      // Fallback: canvas pixel sampling via ZXing-style decode
+      // Works on iPhone Safari and browsers without BarcodeDetector
+      const canvas  = document.getElementById('scanCanvas');
+      const ctx     = canvas.getContext('2d');
+      // Dynamically load ZXing as fallback
+      await loadZXing();
+      const codeReader = new ZXing.BrowserQRCodeReader();
+      codeReader.decodeFromVideoElement(video, (result, err) => {
+        if (result) {
+          const chassis = extractChassis(result.getText());
+          stopScan();
+          document.getElementById('chassisInput').value = chassis;
+          lookupChassis(chassis);
+        }
+      });
+    }
+  } catch(e) {
+    stopScan();
+    // Camera denied or not available — show helpful options
+    document.getElementById('homeError').innerHTML = `
+      <div class="alert alert-warn">
+        📷 Camera not accessible in this browser.<br><br>
+        <strong>Option 1:</strong> Use your phone's camera app to scan the QR code,
+        then copy the chassis number and paste it in the field below.<br><br>
+        <strong>Option 2:</strong> Type the chassis number manually from the TKM gate pass.
+      </div>`;
+  }
+}
+
+function loadZXing() {
+  return new Promise((resolve, reject) => {
+    if (window.ZXing) { resolve(); return; }
+    const s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/zxing-js/0.18.6/umd/index.min.js';
+    s.onload = resolve;
+    s.onerror = reject;
+    document.head.appendChild(s);
+  });
+}
+
+function stopScan() {
+  if (scanInterval) { clearInterval(scanInterval); scanInterval = null; }
+  if (scanStream)   { scanStream.getTracks().forEach(t => t.stop()); scanStream = null; }
+  if (barcodeReader) { barcodeReader = null; }
+  const video = document.getElementById('scanVideo');
+  if (video) { video.srcObject = null; }
+  document.getElementById('btnStartScan').style.display = 'block';
+  document.getElementById('btnStopScan').style.display  = 'none';
+  document.getElementById('scanBox').style.display      = 'none';
+  document.getElementById('scanStatus').style.display   = 'none';
+}
+
+function extractChassis(qrData) {
+  // TKM QR may contain chassis as 17-char VIN or full string
+  const vinMatch = qrData.match(/[A-Z0-9]{17}/);
+  if (vinMatch) return vinMatch[0];
+  // Try to extract from key-value format e.g. "CHASSIS:MA3XXXXX"
+  const kvMatch = qrData.match(/(?:chassis|vin|no)[:\s]+([A-Z0-9]+)/i);
+  if (kvMatch) return kvMatch[1];
+  return qrData.trim().toUpperCase().replace(/[^A-Z0-9]/g,'');
+}
+
+// ── CHASSIS LOOKUP ───────────────────────────────────────────────
+async function lookupChassis(chassis) {
+  const input = chassis || document.getElementById('chassisInput').value.trim().toUpperCase();
+  if (!input || input.length < 5) {
+    showError('homeError', '⚠️ Please enter a valid chassis number.');
+    return;
+  }
+
+  showLoader('Looking up vehicle...');
+  clearError('homeError');
+
+  try {
+    const url = `https://docs.google.com/spreadsheets/d/${STOCK_SHEET_ID}/gviz/tq?tqx=out:json&sheet=Vehicle%20Master`;
+    const res  = await fetch(url);
+    const text = await res.text();
+    const json = JSON.parse(text.replace(/^[^(]+\(/, '').replace(/\);?\s*$/, ''));
+    const rows = json.table.rows;
+
+    let found = null;
+    for (let i = 4; i < rows.length; i++) {  // skip 4 header rows
+      const r = rows[i];
+      const c = r.c[1]?.v?.toString().trim().toUpperCase();
+      if (c === input) {
+        found = {
+          rowIndex:  i + 1,
+          chassis:   c,
+          model:     r.c[2]?.v  || '',
+          variant:   r.c[3]?.v  || '',
+          fuel:      r.c[4]?.v  || '',
+          colour:    r.c[5]?.v  || '',
+          interior:  r.c[6]?.v  || '',
+          suffix:    r.c[8]?.v  || '',
+          location:  r.c[9]?.v  || 'Stockyard',
+          status:    r.c[10]?.v || 'In Stock',
+          days:      r.c[14]?.v || 0,
+        };
+        break;
+      }
+    }
+
+    hideLoader();
+
+    if (found) {
+      currentVehicle = found;
+      showVehicleScreen(found);
+    } else {
+      // Not found — show new arrival screen
+      document.getElementById('nfChassis').textContent = input;
+      document.getElementById('nfChassisDisplay').value = input;
+      currentVehicle = { chassis: input, isNew: true };
+      showScreen('screen-notfound');
+    }
+
+  } catch(e) {
+    hideLoader();
+    showError('homeError', '❌ Could not connect to Vehicle Master. Check internet and try again.');
+    console.error(e);
+  }
+}
+
+// ── SHOW VEHICLE SCREEN ──────────────────────────────────────────
+function showVehicleScreen(v) {
+  document.getElementById('vModel').textContent    = v.model;
+  document.getElementById('vVariant').textContent  = v.variant;
+  document.getElementById('vSuffix').textContent   = v.suffix || 'N/A';
+  document.getElementById('vFuel').textContent     = v.fuel;
+  document.getElementById('vColour').textContent   = v.colour;
+  document.getElementById('vLocation').textContent = '📍 ' + (v.location || 'Unknown');
+  document.getElementById('vChassis').textContent  = v.chassis;
+
+  // Update delivery modal vehicle info
+  document.getElementById('dvModel').textContent   = v.model;
+  document.getElementById('dvVariant').textContent = v.variant;
+  document.getElementById('dvChassis').textContent = v.chassis;
+
+  // Grey out current location button
+  document.querySelectorAll('.location-btn').forEach(b => {
+    b.classList.remove('current-loc', 'selected');
+  });
+  const currentLocId = 'loc' + (v.location || '').replace(/\s/g,'');
+  const currentBtn = document.getElementById(currentLocId);
+  if (currentBtn) currentBtn.classList.add('current-loc');
+
+  // Reset selections
+  selectedLocation = null;
+  document.getElementById('staffName').value = '';
+  document.getElementById('movementRemarks').value = '';
+  clearError('moveError');
+
+  // Alerts
+  const alertsDiv = document.getElementById('vehicleAlerts');
+  alertsDiv.innerHTML = '';
+  if (v.status === 'Sold-Not Delivered') {
+    alertsDiv.innerHTML = `<div class="alert alert-warn">⚑ This vehicle is <strong>Sold — Not Delivered</strong>. Movement will still be logged.</div>`;
+  }
+  if (parseInt(v.days) >= 45) {
+    alertsDiv.innerHTML += `<div class="alert alert-error">🔴 This vehicle has been in the system for <strong>${v.days} days</strong>. Urgent action needed.</div>`;
+  }
+
+  showScreen('screen-vehicle');
+}
+
+// ── SELECT LOCATION ──────────────────────────────────────────────
+function selectLocation(loc) {
+  selectedLocation = loc;
+  document.querySelectorAll('.location-btn').forEach(b => {
+    if (!b.classList.contains('current-loc')) b.classList.remove('selected');
+  });
+  document.getElementById('loc' + loc.replace(/\s/g,'')).classList.add('selected');
+}
+
+// ── CONFIRM MOVEMENT ─────────────────────────────────────────────
+async function confirmMovement() {
+  const staff = document.getElementById('staffName').value.trim();
+  const remarks = document.getElementById('movementRemarks').value.trim();
+
+  if (!selectedLocation) { showError('moveError', '⚠️ Please select a destination location.'); return; }
+  if (!staff)            { showError('moveError', '⚠️ Please enter your name.'); return; }
+
+  clearError('moveError');
+  showLoader('Logging movement...');
+
+  const payload = {
+    action:   'logMovement',
+    chassis:  currentVehicle.chassis,
+    suffix:   currentVehicle.suffix,
+    model:    currentVehicle.model,
+    variant:  currentVehicle.variant,
+    fuel:     currentVehicle.fuel,
+    from:     currentVehicle.location,
+    to:       selectedLocation,
+    staff:    staff,
+    role:     'Yard Staff',
+    remarks:  remarks,
+    via:      'PWA — ' + (navigator.userAgent.includes('Mobile') ? 'Mobile' : 'Desktop'),
+    timestamp: new Date().toISOString()
+  };
+
+  try {
+    await postToAppsScript(payload);
+    saveToRecent({ ...payload, from: currentVehicle.location, to: selectedLocation });
+    hideLoader();
+    showSuccessScreen({
+      icon: '✅', title: 'Movement Logged!',
+      sub: 'Vehicle location updated successfully.',
+      details: [
+        { key: 'Vehicle',      value: `${currentVehicle.model} ${currentVehicle.variant}` },
+        { key: 'Suffix',       value: currentVehicle.suffix || '—' },
+        { key: 'Chassis',      value: currentVehicle.chassis },
+        { key: 'Moved From',   value: currentVehicle.location || '—' },
+        { key: 'Moved To',     value: selectedLocation },
+        { key: 'Logged By',    value: staff },
+        { key: 'Time',         value: new Date().toLocaleTimeString('en-IN', { hour:'2-digit', minute:'2-digit' }) },
+      ]
+    });
+  } catch(e) {
+    hideLoader();
+    showError('moveError', '❌ Failed to log movement. Check internet connection.');
+  }
+}
+
+// ── REGISTER NEW VEHICLE ─────────────────────────────────────────
+async function registerNewVehicle() {
+  const model    = document.getElementById('nfModel').value;
+  const variant  = document.getElementById('nfVariant').value;
+  const fuel     = document.getElementById('nfFuel').value;
+  const colour   = document.getElementById('nfColour').value;
+  const interior = document.getElementById('nfInterior').value;
+  const suffix   = document.getElementById('nfSuffix').value;
+  const dispatch = document.getElementById('nfDispatch').value;
+  const recvBy   = document.getElementById('nfReceivedBy').value.trim();
+
+  if (!model || !variant || !fuel || !colour || !interior) {
+    showError('nfError', '⚠️ Please fill all vehicle specification fields.'); return;
+  }
+  if (!recvBy) { showError('nfError', '⚠️ Please enter who received this vehicle.'); return; }
+
+  clearError('nfError');
+  showLoader('Registering vehicle...');
+
+  const payload = {
+    action:   'addNewVehicle',
+    chassis:  currentVehicle.chassis,
+    model, variant, fuel, colour, interior, suffix,
+    dispatch, receivedBy: recvBy,
+    location: 'Stockyard',
+    status:   'In Stock',
+    arrival:  new Date().toISOString().split('T')[0],
+    timestamp: new Date().toISOString()
+  };
+
+  try {
+    await postToAppsScript(payload);
+    hideLoader();
+    showSuccessScreen({
+      icon: '🚗', title: 'Vehicle Registered!',
+      sub: 'Added to Vehicle Master & Movement Log.',
+      details: [
+        { key: 'Chassis',    value: currentVehicle.chassis },
+        { key: 'Model',      value: `${model} ${variant}` },
+        { key: 'Suffix',     value: suffix },
+        { key: 'Colour',     value: colour },
+        { key: 'Location',   value: 'Stockyard' },
+        { key: 'Received By', value: recvBy },
+      ]
+    });
+  } catch(e) {
+    hideLoader();
+    showError('nfError', '❌ Failed to register vehicle. Check internet connection.');
+  }
+}
+
+// ── DELIVERY MODAL ───────────────────────────────────────────────
+function openDeliveryModal() {
+  document.getElementById('customerName').value    = '';
+  document.getElementById('invoiceNo').value       = '';
+  document.getElementById('deliveredBy').value     = document.getElementById('staffName').value;
+  document.getElementById('deliveryRemarks').value = '';
+  clearError('deliveryError');
+  document.getElementById('deliveryModal').classList.add('show');
+}
+function closeDeliveryModal() {
+  document.getElementById('deliveryModal').classList.remove('show');
+}
+
+async function confirmDelivery() {
+  const customer = document.getElementById('customerName').value.trim();
+  const invoice  = document.getElementById('invoiceNo').value.trim();
+  const delBy    = document.getElementById('deliveredBy').value.trim();
+  const remarks  = document.getElementById('deliveryRemarks').value.trim();
+
+  if (!customer) { showError('deliveryError', '⚠️ Customer name is required.'); return; }
+  if (!invoice)  { showError('deliveryError', '⚠️ Invoice number is required.'); return; }
+  if (!delBy)    { showError('deliveryError', '⚠️ Please enter who is delivering.'); return; }
+
+  clearError('deliveryError');
+  closeDeliveryModal();
+  showLoader('Processing delivery...');
+
+  const payload = {
+    action:      'deliverVehicle',
+    chassis:     currentVehicle.chassis,
+    suffix:      currentVehicle.suffix,
+    model:       currentVehicle.model,
+    variant:     currentVehicle.variant,
+    colour:      currentVehicle.colour,
+    interior:    currentVehicle.interior,
+    customer, invoice, deliveredBy: delBy, remarks,
+    timestamp:   new Date().toISOString()
+  };
+
+  try {
+    await postToAppsScript(payload);
+    hideLoader();
+    showSuccessScreen({
+      icon: '🎉', title: 'Vehicle Delivered!',
+      sub: 'Removed from stock. Archived permanently.',
+      details: [
+        { key: 'Vehicle',   value: `${currentVehicle.model} ${currentVehicle.variant}` },
+        { key: 'Chassis',   value: currentVehicle.chassis },
+        { key: 'Customer',  value: customer },
+        { key: 'Invoice',   value: invoice },
+        { key: 'Delivered By', value: delBy },
+        { key: 'Time',      value: new Date().toLocaleTimeString('en-IN') },
+      ]
+    });
+  } catch(e) {
+    hideLoader();
+    showError('moveError', '❌ Delivery failed. Check internet connection.');
+  }
+}
+
+// ── POST TO APPS SCRIPT ──────────────────────────────────────────
+async function postToAppsScript(payload) {
+  if (false) { // Live mode — demo disabled
+    // Demo mode — simulate success
+    console.log('📤 Demo mode — would send:', payload);
+    await new Promise(r => setTimeout(r, 1200));
+    return { success: true };
+  }
+  const res = await fetch(APPS_SCRIPT_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+  const data = await res.json();
+  if (!data.success) throw new Error(data.error || 'Unknown error');
+  return data;
+}
+
+// ── SUCCESS SCREEN ───────────────────────────────────────────────
+function showSuccessScreen({ icon, title, sub, details }) {
+  document.getElementById('successIcon').textContent = icon;
+  document.getElementById('successTitle').textContent = title;
+  document.getElementById('successSub').textContent   = sub;
+  document.getElementById('successDetail').innerHTML  = details.map(d =>
+    `<div class="detail-row">
+      <span class="key">${d.key}</span>
+      <span class="value">${d.value}</span>
+    </div>`
+  ).join('');
+  showScreen('screen-success');
+}
+
+// ── NAVIGATION ───────────────────────────────────────────────────
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+function goHome() {
+  stopScan();
+  currentVehicle   = null;
+  selectedLocation = null;
+  document.getElementById('chassisInput').value = '';
+  clearError('homeError');
+  loadRecentMovements();
+  showScreen('screen-home');
+}
+
+// ── HELPERS ──────────────────────────────────────────────────────
+function showError(id, msg) {
+  document.getElementById(id).innerHTML =
+    `<div class="alert alert-error">${msg}</div>`;
+}
+function clearError(id) {
+  document.getElementById(id).innerHTML = '';
+}
+function showLoader(text) {
+  document.getElementById('loaderText').textContent = text || 'Please wait...';
+  document.getElementById('loader').classList.add('show');
+}
+function hideLoader() {
+  document.getElementById('loader').classList.remove('show');
+}
+
+// Close modal on overlay click
+document.getElementById('deliveryModal').addEventListener('click', function(e) {
+  if (e.target === this) closeDeliveryModal();
+});
+</script>
+</body>
+</html>
