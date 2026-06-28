@@ -2397,15 +2397,31 @@ async function saveStaff() {
       ? { action:'editStaff',  row:parseInt(editRow), name, role, pin: pinStr || null }
       : { action:'addStaff',   name, role, pin: pinStr };
 
-    const data = JSON.parse(await (await fetch(API, {
-      method:'POST', headers:{'Content-Type':'text/plain'}, body:JSON.stringify(payload)
-    })).text());
+    const response = await fetch(API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify(payload)
+    });
+
+    const rawText = await response.text();
+    let data;
+    try {
+      data = JSON.parse(rawText);
+    } catch(parseErr) {
+      // Apps Script returned HTML error page — likely not deployed
+      hideLoader();
+      errEl.textContent = '❌ Server error. Please redeploy Apps Script and try again.';
+      errEl.classList.add('show');
+      console.error('Parse error. Raw response:', rawText.substring(0, 200));
+      return;
+    }
 
     hideLoader();
     if (data.success) {
       okEl.textContent = isEdit ? '✅ Staff updated successfully!' : '✅ Staff added successfully!';
       okEl.classList.add('show');
       resetStaffForm();
+      setTimeout(() => okEl.classList.remove('show'), 3000);
       await refreshStaffList();
     } else {
       errEl.textContent = '❌ ' + (data.error || 'Failed. Try again.');
@@ -2413,24 +2429,29 @@ async function saveStaff() {
     }
   } catch(e) {
     hideLoader();
-    errEl.textContent = '❌ Error: ' + (e.message || 'Connection failed. Check internet.');
+    errEl.textContent = '❌ Network error: ' + (e.message || 'Check internet connection.');
     errEl.classList.add('show');
   }
 }
 
 async function toggleStaffStatus(row, newStatus, name) {
-  const label = newStatus === 'Inactive' ? 'deactivate' : 'reactivate';
-  if (!confirm(`${label.charAt(0).toUpperCase()+label.slice(1)} ${name}?`)) return;
+  const label = newStatus === 'Inactive' ? 'Deactivate' : 'Reactivate';
+  if (!confirm(label + ' ' + name + '?')) return;
   showLoader('Updating...');
   try {
-    const data = JSON.parse(await (await fetch(API, {
-      method:'POST', headers:{'Content-Type':'text/plain'},
-      body:JSON.stringify({ action:'editStaff', row, name, status:newStatus })
-    })).text());
+    const response = await fetch(API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ action:'editStaff', row:parseInt(row), name, status:newStatus })
+    });
+    const rawText = await response.text();
+    let data;
+    try { data = JSON.parse(rawText); }
+    catch(e) { hideLoader(); alert('❌ Server error. Please redeploy Apps Script.'); return; }
     hideLoader();
     if (data.success) await refreshStaffList();
     else alert('❌ ' + (data.error || 'Failed.'));
-  } catch(e) { hideLoader(); alert('❌ Connection error.'); }
+  } catch(e) { hideLoader(); alert('❌ Network error: ' + e.message); }
 }
 
 // ════════════════════════════════════════════════════════════════
