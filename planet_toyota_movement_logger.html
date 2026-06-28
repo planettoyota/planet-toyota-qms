@@ -1447,15 +1447,24 @@ function clearLockData() { localStorage.removeItem('pt_lock'); }
 // ROLE PERMISSION HELPERS
 // ════════════════════════════════════════════════════════════════
 function userRole()          { return (currentUser ? currentUser.role : '').toLowerCase().trim(); }
-function isSalesRole()       { return ['owner','sales manager','edp','sales team leader','sales tl'].includes(userRole()); }
-function isFullAccess()      { return ['owner','sales manager','edp'].includes(userRole()); }
-function canLogMovement()    { return ['owner','sales manager','service manager','edp','yard staff'].includes(userRole()); }
+function isSalesRole()       { return ['owner','sales manager','sales team leader','sales tl'].includes(userRole()); }
+// Full movement access: Owner, Sales Mgr, Service Mgr, Yard Staff (NOT EDP)
+function canLogMovement()    { return ['owner','sales manager','service manager','yard staff'].includes(userRole()); }
+// Dashboard access: everyone except Yard Staff
+function canSeeDashboard()   { return userRole() !== 'yard staff'; }
+// Stock search: everyone except Yard Staff
+function isFullAccess()      { return ['owner','sales manager','service manager'].includes(userRole()); }
+// Allocate: Owner, Sales Mgr, Sales TL (NOT Service Mgr, NOT EDP)
 function canAllocate()       { return ['owner','sales manager','sales team leader','sales tl'].includes(userRole()); }
-function canSeeDashboard()   { return !['yard staff'].includes(userRole()); }
+// See allocation badge: Owner, Sales Mgr, Sales TL, EDP (NOT Service Mgr, NOT Yard Staff)
 function canSeeAllocation()  { return ['owner','sales manager','edp','sales team leader','sales tl'].includes(userRole()); }
+// TKM Billed entry: Owner, Sales Mgr, EDP
 function canEnterTKMBilled() { return ['owner','sales manager','edp'].includes(userRole()); }
+// Staff management: Owner only
 function canManageStaff()    { return userRole() === 'owner'; }
 function isServiceMgr()      { return userRole() === 'service manager'; }
+// EDP: Dashboard + Stock + TKM Billed only (no movement tabs)
+function isEDP()             { return userRole() === 'edp'; }
 
 function bootApp() {
   document.getElementById('loginScreen').classList.add('hidden');
