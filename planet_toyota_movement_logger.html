@@ -1,0 +1,2814 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#EB0A1E">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="PT Tracker">
+<meta name="format-detection" content="telephone=no">
+<title>Planet Toyota — Vehicle Tracker</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/zxing-js/0.18.6/umd/index.min.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+:root {
+  --red: #EB0A1E; --dark: #1A1A2E; --white: #FFFFFF;
+  --gray: #F2F2F2; --green: #28A745; --amber: #FFC107;
+  --blue: #17A2B8; --purple: #6F42C1; --text: #333333; --light: #F8F9FA;
+  --border: #E0E0E0; --shadow: 0 2px 12px rgba(0,0,0,0.12);
+  --transit: #FF6B35;
+}
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #F0F0F0; color: var(--text); min-height: 100vh; padding-bottom: 80px; }
+
+/* ── LOGIN SCREEN ── */
+.login-screen { position: fixed; inset: 0; background: var(--dark); z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px; }
+.login-screen.hidden { display: none; }
+.login-logo { text-align: center; margin-bottom: 32px; }
+.login-logo .logo-icon { font-size: 52px; margin-bottom: 8px; }
+.login-logo h1 { color: white; font-size: 24px; font-weight: 900; letter-spacing: 1px; }
+.login-logo p  { color: rgba(255,255,255,0.5); font-size: 12px; margin-top: 4px; }
+.login-box { background: white; border-radius: 20px; padding: 24px; width: 100%; max-width: 360px; box-shadow: 0 8px 32px rgba(0,0,0,0.3); }
+.login-box h2 { font-size: 16px; font-weight: 800; color: var(--dark); margin-bottom: 18px; text-align: center; }
+.login-input { width: 100%; padding: 14px; border: 2px solid var(--border); border-radius: 12px; font-size: 15px; margin-bottom: 12px; -webkit-appearance: none; }
+.login-input:focus { outline: none; border-color: var(--red); }
+.pin-dots { display: flex; justify-content: center; gap: 12px; margin: 16px 0; }
+.pin-dot { width: 14px; height: 14px; border-radius: 50%; background: var(--border); transition: background 0.15s; }
+.pin-dot.filled { background: var(--red); }
+.numpad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 8px; }
+.num-btn { padding: 18px; border: 2px solid var(--border); border-radius: 12px; background: white; font-size: 20px; font-weight: 700; cursor: pointer; text-align: center; transition: all 0.15s; color: var(--dark); }
+.num-btn:active { background: var(--red); color: white; border-color: var(--red); transform: scale(0.95); }
+.num-btn.del { font-size: 16px; color: #888; }
+.num-btn.empty { border: none; background: none; cursor: default; }
+.login-error { background: #FDE8EA; color: #C0392B; border-radius: 10px; padding: 10px 14px; font-size: 13px; margin-bottom: 12px; text-align: center; display: none; }
+.login-error.show { display: block; }
+
+.role-badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 10px; font-weight: 800; letter-spacing: 1px; margin-left: 8px; }
+.role-owner   { background: #FFD700; color: #1A1A2E; }
+.role-manager { background: #17A2B8; color: white; }
+.role-staff   { background: #28A745; color: white; }
+
+/* ── SESSION BAR ── */
+.session-bar { background: rgba(0,0,0,0.15); display: flex; align-items: center; justify-content: space-between; padding: 4px 12px; }
+.session-info { color: rgba(255,255,255,0.85); font-size: 10px; }
+.session-name { font-weight: 700; }
+.logout-btn { background: rgba(255,255,255,0.2); border: none; color: white; font-size: 10px; font-weight: 700; padding: 3px 10px; border-radius: 10px; cursor: pointer; }
+
+/* ── HEADER ── */
+.header { background: var(--red); padding: 10px 16px 8px; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+.header-top { display: flex; align-items: center; justify-content: space-between; }
+.header h1 { color: white; font-size: 17px; font-weight: 700; }
+.header p  { color: rgba(255,255,255,0.8); font-size: 11px; margin-top: 2px; }
+.toyota-badge { background: white; color: var(--red); font-size: 9px; font-weight: 800; padding: 3px 7px; border-radius: 10px; letter-spacing: 1px; }
+
+/* BOTTOM NAV */
+.bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: white; border-top: 1px solid var(--border); display: flex; z-index: 150; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); }
+.nav-btn { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 10px 4px 8px; border: none; background: none; cursor: pointer; color: #999; transition: color 0.2s; font-size: 10px; font-weight: 600; gap: 3px; }
+.nav-btn .nav-icon { font-size: 20px; }
+.nav-btn.active { color: var(--red); }
+.nav-btn.active .nav-icon { transform: scale(1.1); }
+.nav-btn.hidden { display: none; }
+
+.screen { display: none; padding: 16px; }
+.screen.active { display: block; }
+.card { background: white; border-radius: 14px; padding: 18px; margin-bottom: 14px; box-shadow: var(--shadow); }
+.card-title { font-size: 11px; font-weight: 700; color: var(--red); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 12px; }
+.btn { width: 100%; padding: 15px; border: none; border-radius: 12px; font-size: 15px; font-weight: 700; cursor: pointer; transition: all 0.18s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+.btn:active { transform: scale(0.97); opacity: 0.9; }
+.btn-red    { background: var(--red);    color: white; }
+.btn-dark   { background: var(--dark);   color: white; }
+.btn-green  { background: var(--green);  color: white; }
+.btn-orange { background: var(--transit);color: white; }
+.btn-blue   { background: var(--blue);   color: white; }
+.btn-outline { background: transparent; color: var(--red); border: 2px solid var(--red); }
+.btn-gray   { background: var(--gray);   color: var(--text); }
+.btn-sm     { padding: 10px 14px; font-size: 13px; border-radius: 8px; width: auto; }
+.mt-10 { margin-top: 10px; }
+.mt-14 { margin-top: 14px; }
+.gap-10 { display: flex; gap: 10px; }
+
+.input-group { margin-bottom: 14px; }
+.input-label { font-size: 11px; font-weight: 700; color: #666; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 6px; display: block; }
+.input-field { width: 100%; padding: 13px 14px; border: 2px solid var(--border); border-radius: 10px; font-size: 15px; color: var(--text); background: var(--light); transition: border-color 0.2s; -webkit-appearance: none; }
+.input-field:focus { outline: none; border-color: var(--red); background: white; }
+.input-field.ok  { border-color: var(--green); }
+.input-with-btn  { display: flex; gap: 8px; }
+.input-with-btn .input-field { flex: 1; }
+
+.v-card { background: linear-gradient(135deg, var(--dark) 0%, #2d2d4e 100%); border-radius: 14px; padding: 16px; margin-bottom: 14px; color: white; box-shadow: var(--shadow); }
+.v-model   { font-size: 18px; font-weight: 800; }
+.v-variant { font-size: 13px; color: rgba(255,255,255,0.7); margin-top: 2px; }
+.v-tags    { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+.tag { background: rgba(255,255,255,0.12); padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+.tag-red    { background: var(--red); }
+.tag-orange { background: var(--transit); }
+.v-chassis { font-size: 11px; color: rgba(255,255,255,0.45); margin-top: 8px; font-family: monospace; letter-spacing: 1px; }
+
+.loc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 6px; }
+.loc-btn { padding: 18px 10px; border-radius: 12px; border: 2px solid var(--border); background: white; cursor: pointer; text-align: center; transition: all 0.18s; }
+.loc-btn:active { transform: scale(0.96); }
+.loc-icon { font-size: 28px; margin-bottom: 6px; }
+.loc-name { font-size: 13px; font-weight: 700; color: var(--text); }
+.loc-sub  { font-size: 10px; color: #999; margin-top: 2px; }
+.loc-btn.selected  { border-color: var(--red); background: #FFF0F0; }
+.loc-btn.selected .loc-name { color: var(--red); }
+.loc-btn.current   { opacity: 0.4; pointer-events: none; background: var(--gray); }
+.loc-full { grid-column: 1 / -1; }
+
+.transit-card { background: linear-gradient(135deg, #FF6B35 0%, #FF8C42 100%); border-radius: 14px; padding: 16px; margin-bottom: 14px; color: white; box-shadow: var(--shadow); }
+.transit-badge { background: rgba(255,255,255,0.2); display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 10px; font-weight: 700; letter-spacing: 1px; margin-bottom: 8px; }
+.transit-title { font-size: 16px; font-weight: 800; margin-bottom: 4px; }
+.transit-sub   { font-size: 12px; opacity: 0.85; }
+.transit-time  { font-size: 11px; opacity: 0.7; margin-top: 6px; }
+
+.deliver-box { border: 2px dashed var(--border); border-radius: 12px; padding: 14px; margin-top: 4px; background: var(--light); }
+
+.alert { border-radius: 10px; padding: 12px 14px; font-size: 13px; margin-bottom: 12px; display: flex; align-items: flex-start; gap: 8px; }
+.alert-error  { background: #FDE8EA; color: #C0392B; border-left: 4px solid var(--red); }
+.alert-warn   { background: #FFF3CD; color: #856404; border-left: 4px solid var(--amber); }
+.alert-info   { background: #D1ECF1; color: #0C5460; border-left: 4px solid var(--blue); }
+.alert-success{ background: #D4EDDA; color: #155724; border-left: 4px solid var(--green); }
+.alert-transit{ background: #FFE8DF; color: #C0390B; border-left: 4px solid var(--transit); }
+
+.loader-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.45); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 999; }
+.loader-overlay.show { display: flex; }
+.spinner { width: 48px; height: 48px; border: 4px solid rgba(255,255,255,0.2); border-top-color: white; border-radius: 50%; animation: spin 0.8s linear infinite; }
+.loader-text { color: white; font-size: 14px; font-weight: 600; margin-top: 14px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: none; align-items: flex-end; justify-content: center; z-index: 200; }
+.modal-overlay.show { display: flex; }
+.modal { background: white; border-radius: 20px 20px 0 0; padding: 20px 20px 36px; width: 100%; animation: slideUp 0.25s ease-out; }
+@keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+.modal-handle { width: 36px; height: 4px; background: #ddd; border-radius: 2px; margin: 0 auto 16px; }
+.modal-title { font-size: 17px; font-weight: 800; margin-bottom: 14px; color: var(--dark); }
+
+.success-icon  { width: 72px; height: 72px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 36px; margin: 0 auto 16px; }
+.success-title { font-size: 22px; font-weight: 800; text-align: center; color: var(--dark); }
+.success-sub   { font-size: 14px; color: #666; text-align: center; margin-top: 6px; }
+.success-detail { background: var(--light); border-radius: 10px; padding: 14px; margin-top: 16px; }
+.detail-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+.detail-row:last-child { border-bottom: none; }
+.detail-row .key   { color: #888; }
+.detail-row .value { font-weight: 700; color: var(--dark); }
+
+.history-item { background: var(--light); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; border-left: 3px solid var(--red); }
+.history-item.transit { border-left-color: var(--transit); }
+.hi-model { font-size: 13px; font-weight: 700; }
+.hi-move  { font-size: 11px; color: #666; margin-top: 3px; }
+.hi-time  { font-size: 10px; color: #aaa; margin-top: 2px; }
+
+.divider { display: flex; align-items: center; gap: 10px; margin: 14px 0; color: #aaa; font-size: 12px; }
+.divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+/* DASHBOARD */
+.dash-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+.stat-card { background: white; border-radius: 14px; padding: 16px 14px; box-shadow: var(--shadow); text-align: center; }
+.stat-num  { font-size: 32px; font-weight: 900; line-height: 1; }
+.stat-label{ font-size: 11px; color: #888; font-weight: 600; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+.stat-card.full { grid-column: 1 / -1; }
+.stat-card.red    .stat-num { color: var(--red); }
+.stat-card.green  .stat-num { color: var(--green); }
+.stat-card.orange .stat-num { color: var(--transit); }
+.stat-card.blue   .stat-num { color: var(--blue); }
+.stat-card.dark   .stat-num { color: var(--dark); }
+
+.model-row { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--border); }
+.model-row:last-child { border-bottom: none; }
+.model-name { font-size: 13px; font-weight: 700; }
+.model-bar-wrap { flex: 1; margin: 0 12px; height: 6px; background: var(--gray); border-radius: 3px; overflow: hidden; }
+.model-bar { height: 100%; background: var(--red); border-radius: 3px; transition: width 0.5s ease; }
+.model-count { font-size: 13px; font-weight: 800; color: var(--dark); min-width: 24px; text-align: right; }
+
+.transit-alert-row { background: #FFE8DF; border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; border-left: 3px solid var(--transit); cursor: pointer; }
+.ta-model { font-size: 13px; font-weight: 700; color: #C0390B; }
+.ta-info  { font-size: 11px; color: #884422; margin-top: 2px; }
+.ta-time  { font-size: 10px; color: #AA6644; margin-top: 2px; font-weight: 600; }
+
+.chassis-row { padding: 10px 12px; background: var(--light); border-radius: 10px; margin-bottom: 8px; cursor: pointer; }
+.chassis-row:active { opacity: 0.8; }
+.cr-model   { font-size: 13px; font-weight: 700; }
+.cr-chassis { font-size: 10px; font-family: monospace; color: #888; margin-top: 1px; }
+.cr-loc     { font-size: 11px; font-weight: 600; margin-top: 4px; }
+.loc-pill   { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 700; }
+.pill-stockyard { background: #E8F5E9; color: #2E7D32; }
+.pill-workshop  { background: #E3F2FD; color: #1565C0; }
+.pill-showroom  { background: #F3E5F5; color: #6A1B9A; }
+.pill-transit   { background: #FFE8DF; color: #BF360C; }
+.pill-delivered { background: #F5F5F5; color: #616161; }
+
+.search-bar { position: sticky; top: 0; background: #F0F0F0; padding: 12px 0 4px; z-index: 10; }
+.search-input { width: 100%; padding: 11px 14px; border: 2px solid var(--border); border-radius: 10px; font-size: 14px; background: white; }
+.search-input:focus { outline: none; border-color: var(--red); }
+
+.history-timeline { position: relative; padding-left: 20px; }
+.history-timeline::before { content: ''; position: absolute; left: 7px; top: 4px; bottom: 4px; width: 2px; background: var(--border); }
+.ht-item { position: relative; margin-bottom: 12px; }
+.ht-dot  { position: absolute; left: -16px; top: 3px; width: 10px; height: 10px; border-radius: 50%; background: var(--red); border: 2px solid white; box-shadow: 0 0 0 1px var(--red); }
+.ht-dot.transit  { background: var(--transit); box-shadow: 0 0 0 1px var(--transit); }
+.ht-dot.received { background: var(--green);   box-shadow: 0 0 0 1px var(--green); }
+.ht-dot.delivered{ background: var(--dark);    box-shadow: 0 0 0 1px var(--dark); }
+.ht-content { background: var(--light); border-radius: 10px; padding: 10px 12px; }
+.ht-action { font-size: 12px; font-weight: 700; color: var(--dark); }
+.ht-detail { font-size: 11px; color: #666; margin-top: 2px; }
+.ht-time   { font-size: 10px; color: #aaa; margin-top: 3px; }
+
+.dash-refresh { display: flex; align-items: center; justify-content: flex-end; gap: 6px; margin-bottom: 10px; }
+.dash-refresh span { font-size: 11px; color: #999; }
+.refresh-btn { background: none; border: 1px solid var(--border); border-radius: 8px; padding: 5px 10px; font-size: 12px; font-weight: 600; cursor: pointer; color: var(--text); }
+
+.empty-state { text-align: center; padding: 40px 20px; color: #aaa; }
+.empty-state .e-icon { font-size: 40px; margin-bottom: 10px; }
+.empty-state .e-text { font-size: 14px; font-weight: 600; }
+.empty-state .e-sub  { font-size: 12px; margin-top: 4px; }
+
+.chassis-detail-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.55); display: none; align-items: flex-end; justify-content: center; z-index: 300; }
+.chassis-detail-overlay.show { display: flex; }
+.chassis-detail { background: white; border-radius: 20px 20px 0 0; padding: 20px 20px 40px; width: 100%; max-height: 80vh; overflow-y: auto; animation: slideUp 0.25s ease-out; }
+
+/* Session timer warning */
+.session-expiry-warn { position: fixed; top: 60px; left: 16px; right: 16px; background: #FFF3CD; border: 1px solid #FFC107; border-radius: 10px; padding: 10px 14px; font-size: 12px; color: #856404; font-weight: 600; z-index: 500; display: none; text-align: center; box-shadow: var(--shadow); }
+.session-expiry-warn.show { display: block; }
+
+@keyframes scanAnim { 0%{top:4px} 50%{top:calc(100% - 6px)} 100%{top:4px} }
+
+
+/* ── CHANGE PIN MODAL ── */
+.change-pin-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: none; align-items: center; justify-content: center; z-index: 600; padding: 20px; }
+.change-pin-overlay.show { display: flex; }
+.change-pin-box { background: white; border-radius: 20px; padding: 24px; width: 100%; max-width: 360px; box-shadow: 0 8px 32px rgba(0,0,0,0.3); }
+.change-pin-box h2 { font-size: 17px; font-weight: 800; color: var(--dark); margin-bottom: 4px; text-align: center; }
+.change-pin-box p  { font-size: 12px; color: #888; text-align: center; margin-bottom: 18px; }
+.pin-step { display: none; }
+.pin-step.active { display: block; }
+.pin-step-label { font-size: 11px; font-weight: 700; color: var(--red); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 10px; text-align: center; }
+.cp-dots { display: flex; justify-content: center; gap: 12px; margin: 12px 0; }
+.cp-dot { width: 14px; height: 14px; border-radius: 50%; background: var(--border); transition: background 0.15s; }
+.cp-dot.filled { background: var(--red); }
+.cp-numpad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 8px; }
+.cp-num-btn { padding: 15px; border: 2px solid var(--border); border-radius: 10px; background: white; font-size: 18px; font-weight: 700; cursor: pointer; text-align: center; transition: all 0.15s; color: var(--dark); }
+.cp-num-btn:active { background: var(--red); color: white; border-color: var(--red); transform: scale(0.95); }
+.cp-num-btn.del { font-size: 14px; color: #888; }
+.cp-num-btn.empty { border: none; background: none; cursor: default; }
+.cp-error { background: #FDE8EA; color: #C0392B; border-radius: 8px; padding: 8px 12px; font-size: 12px; margin-bottom: 10px; text-align: center; display: none; }
+.cp-error.show { display: block; }
+.cp-success { background: #D4EDDA; color: #155724; border-radius: 8px; padding: 10px 12px; font-size: 13px; margin-bottom: 10px; text-align: center; display: none; font-weight: 600; }
+.cp-success.show { display: block; }
+.cp-cancel-btn { width: 100%; padding: 12px; border: 2px solid var(--border); border-radius: 10px; background: white; font-size: 14px; font-weight: 700; cursor: pointer; color: #888; margin-top: 10px; }
+.change-pin-trigger { background: rgba(255,255,255,0.15); border: none; color: white; font-size: 10px; font-weight: 700; padding: 3px 10px; border-radius: 10px; cursor: pointer; margin-right: 6px; }
+
+/* ── LOCATION DRILL-DOWN MODAL ── */
+.loc-drill-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.55); display: none; align-items: flex-end; justify-content: center; z-index: 400; }
+.loc-drill-overlay.show { display: flex; }
+.loc-drill-sheet { background: white; border-radius: 20px 20px 0 0; width: 100%; max-height: 82vh; display: flex; flex-direction: column; animation: slideUp 0.25s ease-out; }
+.loc-drill-header { padding: 16px 20px 12px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.loc-drill-title  { font-size: 17px; font-weight: 800; color: var(--dark); }
+.loc-drill-sub    { font-size: 12px; color: #888; margin-top: 2px; }
+.loc-drill-body   { overflow-y: auto; padding: 12px 16px 32px; flex: 1; }
+.loc-drill-close  { position: absolute; top: 14px; right: 16px; background: none; border: none; font-size: 22px; cursor: pointer; color: #999; }
+
+/* ── VEHICLE LIST ITEM (drill-down + stock search) ── */
+.vli { background: var(--light); border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.vli-info { flex: 1; min-width: 0; }
+.vli-model   { font-size: 13px; font-weight: 800; color: var(--dark); }
+.vli-variant { font-size: 11px; color: #666; margin-top: 2px; }
+.vli-chassis { font-size: 10px; font-family: monospace; color: #aaa; margin-top: 3px; letter-spacing: 0.5px; }
+.vli-tags    { display: flex; gap: 5px; margin-top: 5px; flex-wrap: wrap; }
+.vli-tag     { background: rgba(0,0,0,0.06); padding: 2px 7px; border-radius: 10px; font-size: 10px; font-weight: 600; color: #555; }
+.vli-days    { font-size: 10px; font-weight: 700; }
+.move-btn    { background: var(--red); color: white; border: none; border-radius: 10px; padding: 10px 14px; font-size: 12px; font-weight: 800; cursor: pointer; white-space: nowrap; flex-shrink: 0; transition: all 0.15s; }
+.move-btn:active { transform: scale(0.95); opacity: 0.85; }
+
+/* Make stat cards clickable */
+.stat-card.clickable { cursor: pointer; transition: transform 0.15s, box-shadow 0.15s; }
+.stat-card.clickable:active { transform: scale(0.96); box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
+.stat-card.clickable .stat-label::after { content: ' ▸'; font-size: 9px; opacity: 0.6; }
+
+
+/* ── NAME DROPDOWN ── */
+.name-dropdown-wrap { position: relative; margin-bottom: 12px; }
+.name-search-input { width: 100%; padding: 13px 14px 13px 40px; border: 2px solid var(--border); border-radius: 12px; font-size: 15px; -webkit-appearance: none; background: white; }
+.name-search-input:focus { outline: none; border-color: var(--red); }
+.name-search-icon { position: absolute; left: 13px; top: 50%; transform: translateY(-50%); font-size: 16px; pointer-events: none; }
+.name-dropdown-list { position: absolute; top: calc(100% + 4px); left: 0; right: 0; background: white; border: 2px solid var(--border); border-radius: 12px; max-height: 200px; overflow-y: auto; z-index: 50; box-shadow: 0 4px 16px rgba(0,0,0,0.12); display: none; }
+.name-dropdown-list.show { display: block; }
+.name-option { padding: 12px 14px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #f0f0f0; }
+.name-option:last-child { border-bottom: none; }
+.name-option:active { background: #FFF0F0; }
+.name-option-name { font-size: 14px; font-weight: 600; color: var(--dark); }
+.name-option-role { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 10px; }
+.selected-name-chip { background: #FFF0F0; border: 2px solid var(--red); border-radius: 12px; padding: 11px 14px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; display: none; }
+.selected-name-chip.show { display: flex; }
+.snc-name { font-size: 15px; font-weight: 700; color: var(--dark); }
+.snc-clear { background: none; border: none; font-size: 18px; color: #aaa; cursor: pointer; padding: 0; }
+
+/* ── STAFF MANAGEMENT PANEL ── */
+.staff-panel-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.55); display: none; align-items: flex-end; justify-content: center; z-index: 500; }
+.staff-panel-overlay.show { display: flex; }
+.staff-panel { background: white; border-radius: 20px 20px 0 0; width: 100%; max-height: 88vh; display: flex; flex-direction: column; animation: slideUp 0.25s ease-out; }
+.staff-panel-header { padding: 16px 20px 12px; border-bottom: 1px solid var(--border); flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; }
+.staff-panel-title { font-size: 17px; font-weight: 800; color: var(--dark); }
+.staff-panel-body  { overflow-y: auto; padding: 14px 16px 40px; flex: 1; }
+.staff-panel-close { background: none; border: none; font-size: 22px; cursor: pointer; color: #999; }
+
+.staff-item { background: var(--light); border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; display: flex; align-items: center; gap: 10px; }
+.staff-item.inactive { opacity: 0.5; }
+.staff-avatar { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 800; color: white; flex-shrink: 0; }
+.staff-info { flex: 1; min-width: 0; }
+.staff-name { font-size: 14px; font-weight: 700; color: var(--dark); }
+.staff-meta { font-size: 11px; color: #888; margin-top: 2px; }
+.staff-actions { display: flex; gap: 6px; flex-shrink: 0; }
+.sa-btn { padding: 6px 10px; border-radius: 8px; border: none; font-size: 11px; font-weight: 700; cursor: pointer; }
+.sa-edit   { background: #E3F2FD; color: #1565C0; }
+.sa-deact  { background: #FDE8EA; color: #C0392B; }
+.sa-react  { background: #D4EDDA; color: #155724; }
+
+/* ADD/EDIT STAFF FORM */
+.staff-form { background: var(--light); border-radius: 14px; padding: 16px; margin-bottom: 14px; border: 2px solid var(--border); }
+.staff-form h3 { font-size: 13px; font-weight: 800; color: var(--dark); margin-bottom: 12px; }
+.sf-input { width: 100%; padding: 11px 12px; border: 2px solid var(--border); border-radius: 10px; font-size: 14px; margin-bottom: 10px; -webkit-appearance: none; }
+.sf-input:focus { outline: none; border-color: var(--red); }
+.sf-select { width: 100%; padding: 11px 12px; border: 2px solid var(--border); border-radius: 10px; font-size: 14px; margin-bottom: 10px; background: white; }
+.sf-row { display: flex; gap: 8px; }
+.sf-err { background: #FDE8EA; color: #C0392B; border-radius: 8px; padding: 8px 12px; font-size: 12px; margin-bottom: 8px; display: none; }
+.sf-err.show { display: block; }
+.sf-ok  { background: #D4EDDA; color: #155724; border-radius: 8px; padding: 8px 12px; font-size: 12px; margin-bottom: 8px; display: none; }
+.sf-ok.show  { display: block; }
+
+/* Profile button in header */
+.profile-btn { background: rgba(255,255,255,0.2); border: none; color: white; font-size: 16px; padding: 4px 8px; border-radius: 8px; cursor: pointer; }
+
+
+/* ── OFFLINE BANNER ── */
+.offline-banner { position: fixed; top: 0; left: 0; right: 0; background: #856404; color: white; font-size: 12px; font-weight: 700; text-align: center; padding: 6px; z-index: 2000; display: none; }
+.offline-banner.show { display: block; }
+.sync-badge { background: var(--amber); color: var(--dark); font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 10px; margin-left: 6px; display: none; }
+.sync-badge.show { display: inline-block; }
+
+/* ── SHIFT SUMMARY ── */
+.shift-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.55); display: none; align-items: flex-end; justify-content: center; z-index: 450; }
+.shift-overlay.show { display: flex; }
+.shift-sheet { background: white; border-radius: 20px 20px 0 0; width: 100%; max-height: 80vh; overflow-y: auto; padding: 20px 20px 40px; animation: slideUp 0.25s ease-out; }
+.shift-stat { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border); }
+.shift-stat:last-child { border-bottom: none; }
+.shift-stat-label { font-size: 13px; color: #666; }
+.shift-stat-val   { font-size: 18px; font-weight: 800; color: var(--dark); }
+
+/* ── GATE ENTRY (NEW ARRIVAL) ── */
+.gate-btn { background: var(--green); color: white; border: none; border-radius: 12px; padding: 14px; font-size: 14px; font-weight: 700; cursor: pointer; width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 10px; }
+
+/* ── SOLD MODAL ── */
+.sold-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: none; align-items: flex-end; justify-content: center; z-index: 200; }
+.sold-overlay.show { display: flex; }
+
+</style>
+</head>
+<body>
+
+<!-- ══ LOGIN SCREEN ══ -->
+<div class="offline-banner" id="offlineBanner">No internet connection — movements will be saved and synced when online <span class="sync-badge" id="syncBadge">0 pending</span></div>
+<div class="login-screen" id="loginScreen">
+  <div class="login-logo">
+    <div class="logo-icon">🚗</div>
+    <h1>PLANET TOYOTA</h1>
+    <p>Narnaul • Vehicle Tracker</p>
+  </div>
+  <div class="login-box">
+    <h2>Enter Your PIN</h2>
+    <!-- Selected name chip -->
+    <div class="selected-name-chip" id="selectedNameChip">
+      <span class="snc-name" id="selectedNameText">—</span>
+      <button class="snc-clear" onclick="clearSelectedName()">✕</button>
+    </div>
+    <!-- Search dropdown -->
+    <div class="name-dropdown-wrap" id="nameDropdownWrap">
+      <span class="name-search-icon">👤</span>
+      <input class="name-search-input" id="nameSearch" type="text" placeholder="Search your name..."
+        autocomplete="off" oninput="filterNames()" onfocus="showNameList()">
+      <div class="name-dropdown-list" id="nameDropdownList"></div>
+    </div>
+    <div class="pin-dots">
+      <div class="pin-dot" id="dot0"></div>
+      <div class="pin-dot" id="dot1"></div>
+      <div class="pin-dot" id="dot2"></div>
+      <div class="pin-dot" id="dot3"></div>
+    </div>
+    <div class="login-error" id="loginError"></div>
+
+    <div class="numpad">
+      <button class="num-btn" onclick="pinKey('1')">1</button>
+      <button class="num-btn" onclick="pinKey('2')">2</button>
+      <button class="num-btn" onclick="pinKey('3')">3</button>
+      <button class="num-btn" onclick="pinKey('4')">4</button>
+      <button class="num-btn" onclick="pinKey('5')">5</button>
+      <button class="num-btn" onclick="pinKey('6')">6</button>
+      <button class="num-btn" onclick="pinKey('7')">7</button>
+      <button class="num-btn" onclick="pinKey('8')">8</button>
+      <button class="num-btn" onclick="pinKey('9')">9</button>
+      <button class="num-btn empty"></button>
+      <button class="num-btn" onclick="pinKey('0')">0</button>
+      <button class="num-btn del" onclick="pinDel()">⌫</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SESSION EXPIRY WARNING ══ -->
+<div class="session-expiry-warn" id="sessionExpiryWarn">⏱ Session expiring in 5 minutes — tap anywhere to stay logged in</div>
+
+<!-- ══ HEADER ══ -->
+<div class="header" id="mainHeader" style="display:none">
+  <div class="session-bar">
+    <div class="session-info">
+      <span class="session-name" id="sessionName">—</span>
+      <span class="role-badge" id="sessionRoleBadge"></span>
+    </div>
+    <button class="profile-btn" id="profileBtn" onclick="openProfileMenu()">👤</button><button class="logout-btn" onclick="logout()">Logout</button>
+  </div>
+  <div class="header-top" style="margin-top:6px">
+    <div><h1>🚗 Planet Toyota</h1><p id="headerSub">Vehicle Movement Tracker</p></div>
+    <span class="toyota-badge">NARNAUL</span>
+  </div>
+</div>
+
+<div class="loader-overlay" id="loader">
+  <div class="spinner"></div>
+  <div class="loader-text" id="loaderText">Please wait...</div>
+</div>
+
+<!-- ══ BOTTOM NAV ══ -->
+<nav class="bottom-nav" id="bottomNav" style="display:none">
+  <button class="nav-btn active" id="navLog" onclick="switchTab('log')">
+    <span class="nav-icon">📋</span>Log Movement
+  </button>
+  <button class="nav-btn" id="navReceive" onclick="switchTab('receive')">
+    <span class="nav-icon">📥</span>Receive
+  </button>
+  <button class="nav-btn hidden" id="navDash" onclick="switchTab('dash')">
+    <span class="nav-icon">📊</span>Dashboard
+  </button>
+  <button class="nav-btn hidden" id="navStock" onclick="switchTab('stock')">
+    <span class="nav-icon">🔍</span>Stock
+  </button>
+</nav>
+
+<!-- ══ SHIFT SUMMARY MODAL ══ -->
+<div class="shift-overlay" id="shiftOverlay">
+  <div class="shift-sheet">
+    <div class="modal-handle"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <div class="modal-title" style="margin:0">My Shift Summary</div>
+      <button onclick="closeShiftSummary()" style="background:none;border:none;font-size:22px;cursor:pointer;color:#999">✕</button>
+    </div>
+    <div id="shiftDate" style="font-size:12px;color:#888;margin-bottom:16px"></div>
+    <div class="shift-stat"><span class="shift-stat-label">Movements Logged</span><span class="shift-stat-val" id="shiftMovements">0</span></div>
+    <div class="shift-stat"><span class="shift-stat-label">Vehicles Dispatched</span><span class="shift-stat-val" id="shiftDispatched">0</span></div>
+    <div class="shift-stat"><span class="shift-stat-label">Vehicles Received</span><span class="shift-stat-val" id="shiftReceived">0</span></div>
+    <div class="shift-stat"><span class="shift-stat-label">New Arrivals Registered</span><span class="shift-stat-val" id="shiftArrivals">0</span></div>
+    <div class="shift-stat"><span class="shift-stat-label">Deliveries Done</span><span class="shift-stat-val" id="shiftDeliveries">0</span></div>
+    <div style="margin-top:16px;font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:8px">Movement Detail</div>
+    <div id="shiftDetail"></div>
+  </div>
+</div>
+
+<!-- ══ TAB 1 — LOG MOVEMENT ══ -->
+<div class="screen" id="tab-log" style="display:none">
+  <div class="card" style="margin-top:4px">
+    <div class="card-title">📷 Scan Vehicle QR Code</div>
+    <button class="btn btn-red" id="btnStartScan" onclick="startScan()">📷 Open QR Scanner</button>
+    <div id="scanError" style="margin-top:10px"></div>
+  </div>
+
+  <div id="scanOverlay" style="display:none;position:fixed;inset:0;background:#000;z-index:500;flex-direction:column">
+    <div style="background:#EB0A1E;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
+      <div>
+        <div style="color:white;font-weight:700;font-size:16px">📷 Scan QR Code</div>
+        <div style="color:rgba(255,255,255,0.8);font-size:11px">Point camera at QR code on windshield</div>
+      </div>
+      <button onclick="stopScan()" style="background:rgba(255,255,255,0.2);border:none;color:white;padding:8px 16px;border-radius:20px;font-size:14px;font-weight:700;cursor:pointer">✕ Close</button>
+    </div>
+    <div style="position:relative;flex:1;overflow:hidden">
+      <video id="scanVideo" playsinline autoplay muted webkit-playsinline style="width:100%;height:100%;object-fit:cover;display:block"></video>
+      <canvas id="scanCanvas" style="display:none"></canvas>
+      <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none">
+        <div style="width:72%;max-width:280px;aspect-ratio:1;position:relative">
+          <div style="position:absolute;top:0;left:0;width:32px;height:32px;border-top:4px solid #EB0A1E;border-left:4px solid #EB0A1E;border-radius:4px 0 0 0"></div>
+          <div style="position:absolute;top:0;right:0;width:32px;height:32px;border-top:4px solid #EB0A1E;border-right:4px solid #EB0A1E;border-radius:0 4px 0 0"></div>
+          <div style="position:absolute;bottom:0;left:0;width:32px;height:32px;border-bottom:4px solid #EB0A1E;border-left:4px solid #EB0A1E;border-radius:0 0 0 4px"></div>
+          <div style="position:absolute;bottom:0;right:0;width:32px;height:32px;border-bottom:4px solid #EB0A1E;border-right:4px solid #EB0A1E;border-radius:0 0 4px 0"></div>
+          <div id="scanLine" style="position:absolute;left:4px;right:4px;height:2px;background:rgba(235,10,30,0.8);top:0;animation:scanAnim 2s linear infinite"></div>
+        </div>
+        <div style="margin-top:20px;background:rgba(0,0,0,0.6);color:white;padding:8px 20px;border-radius:20px;font-size:13px;font-weight:600">Hold steady — align QR within the box</div>
+      </div>
+      <div id="scanStatus" style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,0.7);color:#4CAF50;font-size:11px;padding:6px 12px;font-family:monospace;text-align:center">Initialising camera...</div>
+    </div>
+    <div id="scanResult" style="display:none;background:#1A1A2E;padding:16px;flex-shrink:0">
+      <div style="color:rgba(255,255,255,0.6);font-size:11px;margin-bottom:4px">QR CODE DETECTED</div>
+      <div id="rawQRData" style="color:#4CAF50;font-size:13px;font-family:monospace;word-break:break-all;margin-bottom:10px"></div>
+      <div style="color:rgba(255,255,255,0.6);font-size:11px;margin-bottom:4px">CHASSIS NUMBER</div>
+      <div id="detectedChassis" style="color:white;font-size:20px;font-weight:800;letter-spacing:2px;margin-bottom:14px"></div>
+      <div style="display:flex;gap:10px">
+        <button onclick="rejectScan()" style="flex:1;padding:12px;background:rgba(255,255,255,0.1);border:none;color:white;border-radius:10px;font-size:14px;cursor:pointer">🔄 Rescan</button>
+        <button onclick="confirmScan()" style="flex:2;padding:12px;background:#EB0A1E;border:none;color:white;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer">✅ Use This Chassis</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:0">
+    <div class="card-title">🚛 New TKM Arrival — Gate Entry</div>
+    <p style="font-size:12px;color:#666;margin-bottom:12px">Use this when a new vehicle arrives from TKM. Records gate entry timestamp automatically.</p>
+    <button class="gate-btn" onclick="openGateEntry()" style="margin-bottom:10px">+ Register New Arrival</button>
+    <button class="gate-btn" id="tkmBilledEntryBtn" onclick="openTKMBilledEntry()" style="background:var(--dark);display:none">📋 Register TKM Billed Vehicle</button>
+  </div>
+
+  <!-- GATE ENTRY MODAL -->
+  <div class="modal-overlay" id="gateEntryOverlay">
+    <div class="modal" style="max-height:85vh;overflow-y:auto">
+      <div class="modal-handle"></div>
+      <div class="modal-title">🚛 New TKM Arrival — Gate Entry</div>
+      <div class="alert alert-info" style="margin-bottom:14px">Gate entry timestamp will be recorded automatically.</div>
+      <div class="input-group">
+        <label class="input-label">Chassis No. *</label>
+        <div class="input-with-btn">
+          <input class="input-field" id="geChassis" type="text" placeholder="Scan or enter chassis"
+            style="text-transform:uppercase;letter-spacing:1px"
+            oninput="this.value=this.value.toUpperCase();validateChassisFormat('geChassis','geChassisErr')">
+          <button class="btn btn-red btn-sm" onclick="startScanForGate()">📷</button>
+        </div>
+        <div id="geChassisErr" style="font-size:11px;color:var(--red);margin-top:4px"></div>
+      </div>
+      <div class="input-group"><label class="input-label">Model *</label><select class="input-field" id="geModel" onchange="geDDVariant()"><option value="">— Select Model —</option></select></div>
+      <div class="input-group"><label class="input-label">Variant *</label><select class="input-field" id="geVariant" onchange="geDDFuel()"><option value="">— Select Variant —</option></select></div>
+      <div class="input-group"><label class="input-label">Fuel Type *</label><select class="input-field" id="geFuel" onchange="geDDColour()"><option value="">— Select Fuel Type —</option></select></div>
+      <div class="input-group"><label class="input-label">Colour *</label><select class="input-field" id="geColour" onchange="geDDInterior()"><option value="">— Select Colour —</option></select></div>
+      <div class="input-group"><label class="input-label">Interior *</label><select class="input-field" id="geInterior" onchange="geDDSuffix()"><option value="">— Select Interior —</option></select></div>
+      <div class="input-group"><label class="input-label">Suffix Code (auto)</label><input class="input-field ok" id="geSuffix" readonly></div>
+      <div class="input-group"><label class="input-label">TKM Invoice / Dispatch Date</label><input class="input-field" id="geDispatch" type="date"></div>
+      <div class="input-group"><label class="input-label">Driver Name (TKM transporter) *</label><input class="input-field" id="geDriver" type="text" placeholder="Driver who delivered from TKM"></div>
+      <div class="input-group"><label class="input-label">Photo (optional)</label>
+        <input type="file" id="gePhoto" accept="image/*" capture="environment" style="font-size:13px;padding:8px 0">
+      </div>
+      <div class="input-group"><label class="input-label">Remarks</label><input class="input-field" id="geRemarks" type="text" placeholder="Condition, damage if any..."></div>
+      <div id="geError" style="margin-bottom:10px"></div>
+      <div class="gap-10">
+        <button class="btn btn-gray" style="flex:1" onclick="closeGateEntry()">Cancel</button>
+        <button class="btn btn-green" style="flex:2" onclick="confirmGateEntry()">✅ Register Arrival</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider">OR ENTER MANUALLY</div>
+  <div class="card">
+    <div class="card-title">⌨️ Enter Chassis Number</div>
+    <div class="input-group">
+      <label class="input-label">Chassis No.</label>
+      <div class="input-with-btn">
+        <input class="input-field" id="chassisInput" type="text" placeholder="e.g. MA3XXXXXX1234567"
+          style="text-transform:uppercase;letter-spacing:1px"
+          oninput="this.value=this.value.toUpperCase();validateChassisFormat('chassisInput','chassisFormatErr')"
+          onkeydown="if(event.key==='Enter')findChassis()">
+        <button class="btn btn-red btn-sm" onclick="findChassis()">🔍 Find</button>
+      </div>
+    </div>
+    <div id="homeError"></div>
+  </div>
+
+  <div class="card" id="recentCard" style="display:none">
+    <div class="card-title">🕐 Recent Movements</div>
+    <div id="recentList"></div>
+  </div>
+</div>
+
+<!-- ══ TAB 2 — RECEIVE ══ -->
+<div class="screen" id="tab-receive" style="display:none">
+  <div class="alert alert-transit" style="margin-bottom:14px">
+    🚚 Use this screen when a vehicle arrives at your location. Confirm receipt to close the transit.
+  </div>
+  <div class="card">
+    <div class="card-title">📥 Confirm Vehicle Receipt</div>
+    <div class="input-group">
+      <label class="input-label">Chassis No. or Scan QR</label>
+      <div class="input-with-btn">
+        <input class="input-field" id="rcvChassisInput" type="text" placeholder="Enter / scan chassis"
+          style="text-transform:uppercase;letter-spacing:1px"
+          oninput="this.value=this.value.toUpperCase();validateChassisFormat('chassisInput','chassisFormatErr')"
+          onkeydown="if(event.key==='Enter')findTransit()">
+        <button class="btn btn-red btn-sm" onclick="startScanForReceive()">📷</button>
+      </div>
+    </div>
+    <button class="btn btn-orange" onclick="findTransit()">🔍 Find In-Transit Vehicle</button>
+    <div id="rcvError" style="margin-top:10px"></div>
+  </div>
+  <div id="rcvVehicleCard" style="display:none">
+    <div class="transit-card">
+      <div class="transit-badge">🚚 IN TRANSIT</div>
+      <div class="transit-title" id="rcvModel">—</div>
+      <div class="transit-sub" id="rcvVariant">—</div>
+      <div style="margin-top:8px;font-size:12px;opacity:0.85">From: <strong id="rcvFrom">—</strong> → To: <strong id="rcvTo">—</strong></div>
+      <div style="margin-top:4px;font-size:12px;opacity:0.85">Sent by: <strong id="rcvSentBy">—</strong></div>
+      <div style="margin-top:4px;font-size:12px;opacity:0.85">Driver: <strong id="rcvDriverNameShow">—</strong></div>
+      <div class="transit-time" id="rcvTransitTime">—</div>
+    </div>
+    <div class="card">
+      <div class="card-title">✅ Confirm Receipt</div>
+      <div class="input-group">
+        <label class="input-label">Received By</label>
+        <input class="input-field ok" id="rcvStaffName" type="text" readonly
+          style="background:#F0FFF4;color:var(--dark);font-weight:700;cursor:not-allowed">
+      </div>
+      <div class="input-group">
+        <label class="input-label">Driver Name *</label>
+        <input class="input-field" id="rcvDriverName" type="text" placeholder="Name of driver who delivered the vehicle">
+      </div>
+      <div class="input-group">
+        <label class="input-label">Remarks (optional)</label>
+        <input class="input-field" id="rcvRemarks" type="text" placeholder="Condition on arrival, notes...">
+      </div>
+      <div id="rcvConfirmError" style="margin-bottom:8px"></div>
+      <button class="btn btn-green" onclick="confirmReceipt()">✅ Confirm — Vehicle Received</button>
+      <button class="btn btn-outline mt-10" onclick="resetReceive()">← Back</button>
+    </div>
+  </div>
+  <div class="card" id="pendingTransitCard">
+    <div class="card-title">⏳ Pending In-Transit Vehicles</div>
+    <div id="pendingTransitList"><div class="empty-state"><div class="e-icon">🚚</div><div class="e-text">Loading...</div></div></div>
+  </div>
+</div>
+
+<!-- ══ TAB 3 — DASHBOARD ══ -->
+<div class="screen" id="tab-dash" style="display:none">
+  <div class="dash-refresh">
+    <span id="dashLastUpdated">—</span>
+    <button class="refresh-btn" onclick="loadDashboard()">🔄 Refresh</button>
+  </div>
+  <div class="dash-grid">
+    <div class="stat-card dark full clickable" onclick="openLocDrill('ALL')"><div class="stat-num" id="dTotal">—</div><div class="stat-label">Total Vehicles in Stock</div></div>
+    <div class="stat-card green clickable" onclick="openLocDrill('Stockyard')"><div class="stat-num" id="dStockyard">—</div><div class="stat-label">Stockyard</div></div>
+    <div class="stat-card blue clickable" onclick="openLocDrill('Workshop')"><div class="stat-num" id="dWorkshop">—</div><div class="stat-label">Workshop</div></div>
+    <div class="stat-card red full clickable" onclick="openLocDrill('Showroom')"><div class="stat-num" id="dShowroom">—</div><div class="stat-label">Showroom</div></div>
+    <div class="stat-card orange full clickable" onclick="openLocDrill('In Transit')"><div class="stat-num" id="dTransit">—</div><div class="stat-label">In Transit</div></div>
+    <div class="stat-card purple full clickable" onclick="openTKMBilledSheet()" style="cursor:pointer;margin-top:10px"><div class="stat-card-accent" style="background:#7C3AED"></div><div class="stat-num" id="dTKMBilled" style="color:#7C3AED">—</div><div class="stat-label">TKM Billed — Not Arrived</div></div>
+  </div>
+  <div class="card">
+    <div class="card-title">🚗 Model-wise Stock</div>
+    <div id="modelWiseList"><div class="empty-state"><div class="e-icon">📊</div><div class="e-text">Loading...</div></div></div>
+  </div>
+  <div class="card" id="transitAlertCard" style="display:none">
+    <div class="card-title" style="color:var(--transit)">⚠️ Transit Alerts — Not Received</div>
+    <div id="transitAlertList"></div>
+  </div>
+  <div class="card">
+    <div class="card-title">🕐 Recent Activity (Last 10)</div>
+    <div id="recentActivityList"><div class="empty-state"><div class="e-icon">📋</div><div class="e-text">Loading...</div></div></div>
+  </div>
+</div>
+
+<!-- ══ TAB 4 — STOCK ══ -->
+<div class="screen" id="tab-stock" style="display:none">
+  <div class="search-bar">
+    <input class="search-input" id="stockSearch" type="text" placeholder="🔍 Search by chassis, model, colour..."
+      oninput="filterStock()" style="text-transform:uppercase">
+  </div>
+  <div style="display:flex;gap:8px;overflow-x:auto;padding:10px 0;scrollbar-width:none">
+    <button onclick="setFilter('ALL')" style="background:var(--dark);color:white;padding:6px 14px;border:none;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">All</button>
+    <button onclick="setFilter('Stockyard')" style="background:#E8F5E9;color:#2E7D32;padding:6px 14px;border:none;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">🅿️ Stockyard</button>
+    <button onclick="setFilter('Workshop')"  style="background:#E3F2FD;color:#1565C0;padding:6px 14px;border:none;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">🔧 Workshop</button>
+    <button onclick="setFilter('Showroom')"  style="background:#F3E5F5;color:#6A1B9A;padding:6px 14px;border:none;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">🏢 Showroom</button>
+    <button onclick="setFilter('TKM Billed')" style="background:#EDE9FE;color:#5B21B6;padding:6px 14px;border:none;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">📋 TKM Billed</button>
+    <button onclick="setFilter('In Transit')" style="background:#FFE8DF;color:#BF360C;padding:6px 14px;border:none;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">🚚 In Transit</button>
+  </div>
+  <div id="stockCount" style="font-size:12px;color:#888;margin-bottom:10px">Loading stock...</div>
+  <div id="stockList"></div>
+</div>
+
+<!-- ══ VEHICLE SCREENS ══ -->
+<div class="screen" id="screen-vehicle" style="display:none">
+  <div class="v-card">
+    <div class="v-model"   id="vModel">—</div>
+    <div class="v-variant" id="vVariant">—</div>
+    <div class="v-tags">
+      <span class="tag tag-red" id="vSuffix">—</span>
+      <span class="tag" id="vFuel">—</span>
+      <span class="tag" id="vColour">—</span>
+      <span class="tag" id="vLocation">📍 —</span>
+    </div>
+    <div class="v-chassis" id="vChassis">—</div>
+  </div>
+  <div id="vehicleAlerts"></div>
+  <div class="card">
+    <div class="card-title">📍 Move To Location</div>
+    <div class="loc-grid">
+      <div class="loc-btn" id="locStockyard" onclick="selectLoc('Stockyard')"><div class="loc-icon">🅿️</div><div class="loc-name">Stockyard</div><div class="loc-sub">Main yard</div></div>
+      <div class="loc-btn" id="locWorkshop"  onclick="selectLoc('Workshop')"><div class="loc-icon">🔧</div><div class="loc-name">Workshop</div><div class="loc-sub">PDI / service</div></div>
+      <div class="loc-btn loc-full" id="locShowroom" onclick="selectLoc('Showroom')"><div class="loc-icon">🏢</div><div class="loc-name">Showroom</div><div class="loc-sub">Display / customer</div></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">👤 Staff Details</div>
+    <div class="input-group">
+      <label class="input-label">Logged By</label>
+      <input class="input-field ok" id="staffName" type="text" readonly
+        style="background:#F0FFF4;color:var(--dark);font-weight:700;cursor:not-allowed">
+    </div>
+    <div class="input-group">
+      <label class="input-label">Driver Name *</label>
+      <input class="input-field" id="driverName" type="text" placeholder="Name of person driving the vehicle">
+    </div>
+    <div class="input-group">
+      <label class="input-label">Remarks (optional)</label>
+      <input class="input-field" id="moveRemarks" type="text" placeholder="e.g. Sent for PDI, Customer viewing...">
+    </div>
+    <div id="moveError" style="margin-bottom:8px"></div>
+    <button class="btn btn-green" onclick="confirmMove()">✅ Dispatch Vehicle</button>
+    <button class="btn btn-outline mt-10" onclick="goHome()">← Back</button>
+  </div>
+  <div class="card" id="allocCard" style="display:none">
+    <div class="card-title">🔖 Vehicle Allocation</div>
+    <div id="allocStatusDisplay"></div>
+    <button class="btn btn-dark" id="allocBtn" onclick="openAllocModal()" style="margin-top:8px;display:none">🔖 Allocate to Customer</button>
+  </div>
+
+  <div class="card">
+    <div class="deliver-box">
+      <div class="deliver-title" style="margin-bottom:8px;font-weight:700;color:var(--dark)">Additional Actions</div>
+      <button class="btn btn-dark" style="margin-bottom:10px;padding:12px" onclick="openSoldModal()">⚑ Mark as Sold — Not Delivered</button>
+      <button class="btn btn-dark" onclick="openDelivery()" style="padding:12px">🎉 Deliver to Customer</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SOLD MODAL ══ -->
+<div class="sold-overlay" id="soldOverlay">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">⚑ Mark as Sold — Not Delivered</div>
+    <div class="alert alert-warn" style="margin-bottom:14px">Vehicle stays in stock but status changes to Sold. Deliver it separately when ready.</div>
+    <div class="v-card" style="margin-bottom:14px">
+      <div class="v-model" id="soldModel">—</div>
+      <div class="v-chassis" id="soldChassis">—</div>
+    </div>
+    <div class="input-group"><label class="input-label">Booking Ref / Customer Name *</label><input class="input-field" id="soldBookingRef" type="text" placeholder="e.g. BK-2026-123 or Customer Name"></div>
+    <div class="input-group"><label class="input-label">Sold By *</label><input class="input-field ok" id="soldBy" type="text" readonly style="background:#F0FFF4;color:var(--dark);font-weight:700;cursor:not-allowed"></div>
+    <div class="input-group"><label class="input-label">Remarks (optional)</label><input class="input-field" id="soldRemarks" type="text" placeholder="Finance, exchange, etc."></div>
+    <div id="soldError" style="margin-bottom:10px"></div>
+    <div class="gap-10">
+      <button class="btn btn-gray" style="flex:1" onclick="closeSoldModal()">Cancel</button>
+      <button class="btn btn-dark" style="flex:2" onclick="confirmSold()">✅ Confirm Sold</button>
+    </div>
+  </div>
+</div>
+
+<div class="screen" id="screen-new" style="display:none">
+  <div class="card" style="margin-top:4px">
+    <div class="alert alert-warn">⚠️ Chassis <strong id="nfChassis">—</strong> not in Vehicle Master. Register as new TKM arrival.</div>
+    <div class="card-title">➕ Register New Vehicle</div>
+    <div class="input-group"><label class="input-label">Chassis No.</label><input class="input-field ok" id="nfChassisShow" readonly></div>
+    <div class="input-group"><label class="input-label">Model *</label><select class="input-field" id="nfModel" onchange="ddVariant()"><option value="">— Select Model —</option></select></div>
+    <div class="input-group"><label class="input-label">Variant *</label><select class="input-field" id="nfVariant" onchange="ddFuel()"><option value="">— Select Variant —</option></select></div>
+    <div class="input-group"><label class="input-label">Fuel Type *</label><select class="input-field" id="nfFuel" onchange="ddColour()"><option value="">— Select Fuel Type —</option></select></div>
+    <div class="input-group"><label class="input-label">Colour *</label><select class="input-field" id="nfColour" onchange="ddInterior()"><option value="">— Select Colour —</option></select></div>
+    <div class="input-group"><label class="input-label">Interior *</label><select class="input-field" id="nfInterior" onchange="ddSuffix()"><option value="">— Select Interior —</option></select></div>
+    <div class="input-group"><label class="input-label">Suffix Code (auto)</label><input class="input-field ok" id="nfSuffix" readonly placeholder="Auto-fills on selection"></div>
+    <div class="input-group"><label class="input-label">TKM Dispatch Date</label><input class="input-field" id="nfDispatch" type="date"></div>
+    <div class="input-group"><label class="input-label">Received By *</label><input class="input-field" id="nfReceivedBy" type="text" placeholder="Your name"></div>
+    <div id="nfError" style="margin-bottom:10px"></div>
+    <button class="btn btn-green" onclick="registerVehicle()">✅ Add to Vehicle Master</button>
+    <button class="btn btn-outline mt-10" onclick="goHome()">← Back</button>
+  </div>
+</div>
+
+<div class="screen" id="screen-success" style="display:none">
+  <div class="card" style="margin-top:24px;text-align:center;padding:32px 20px">
+    <div class="success-icon" id="sIcon" style="background:var(--green)">✅</div>
+    <div class="success-title" id="sTitle">Done!</div>
+    <div class="success-sub"   id="sSub">Saved successfully.</div>
+    <div class="success-detail" id="sDetail"></div>
+    <button class="btn btn-red mt-14" onclick="goHome()">🔄 Log Another Movement</button>
+  </div>
+</div>
+
+<!-- MODAL: DELIVERY -->
+<div class="modal-overlay" id="modalDelivery">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">🤝 Confirm Delivery</div>
+    <div class="alert alert-warn" style="margin-bottom:14px">⚠️ <strong>Permanent action</strong> — vehicle removed from all stock reports.</div>
+    <div class="v-card" id="dvCard" style="margin-bottom:14px">
+      <div class="v-model" id="dvModel">—</div>
+      <div class="v-chassis" id="dvChassis">—</div>
+    </div>
+    <div class="input-group"><label class="input-label">Customer Name *</label><input class="input-field" id="dCustomer" type="text" placeholder="Full name"></div>
+    <div class="input-group"><label class="input-label">Invoice Number *</label><input class="input-field" id="dInvoice" type="text" placeholder="e.g. PT-2026-1234"></div>
+    <div class="input-group"><label class="input-label">Delivered By</label><input class="input-field ok" id="dBy" type="text" readonly style="background:#F0FFF4;color:var(--dark);font-weight:700;cursor:not-allowed"></div>
+    <div class="input-group"><label class="input-label">Remarks</label><input class="input-field" id="dRemarks" type="text" placeholder="Optional"></div>
+    <div id="dError" style="margin-bottom:10px"></div>
+    <div class="gap-10">
+      <button class="btn btn-gray" style="flex:1" onclick="closeDelivery()">Cancel</button>
+      <button class="btn btn-green" style="flex:2" onclick="confirmDelivery()">✅ Confirm</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: CHASSIS DETAIL -->
+<div class="chassis-detail-overlay" id="chassisDetailOverlay">
+  <div class="chassis-detail">
+    <div class="modal-handle"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <div class="modal-title" style="margin:0" id="cdTitle">Vehicle Detail</div>
+      <button onclick="closeChassisDetail()" style="background:none;border:none;font-size:22px;cursor:pointer;color:#999">✕</button>
+    </div>
+    <div id="cdBody"></div>
+  </div>
+</div>
+
+<script>
+// ── CONFIG ───────────────────────────────────────────────────────
+const API = 'https://script.google.com/macros/s/AKfycbzxZgMd1oz1gLSIZaemnUb03vNRTsLVHPbsoZnO6K9U-IkLhXqcq8kLwKNKqBZiTp7aLA/exec';
+const SESSION_DURATION   = 30 * 60 * 1000; // 30 minutes
+const WARN_BEFORE_EXPIRY = 5 * 60 * 1000;  // warn 5 min before expiry
+
+// ── AUTH STATE ───────────────────────────────────────────────────
+let currentUser  = null; // { name, role, loginTime }
+let pinBuffer    = '';
+let sessionTimer = null;
+let warnTimer    = null;
+
+// ── APP STATE ────────────────────────────────────────────────────
+let vehicle     = null;
+let selLoc      = null;
+let suffixes    = [];
+let scanStr     = null;
+let scanTmr     = null;
+let scanMode    = 'log';
+let detectedRaw = null;
+let recent      = JSON.parse(localStorage.getItem('pt_recent') || '[]');
+let stockFilter = 'ALL';
+let allStock    = [];
+let rcvVehicle  = null;
+let activeTab   = 'log';
+
+// ════════════════════════════════════════════════════════════════
+// LOGIN SYSTEM
+// ════════════════════════════════════════════════════════════════
+window.onload = () => {
+  // Check for existing valid session
+  const saved = localStorage.getItem('pt_session');
+  if (saved) {
+    try {
+      const s = JSON.parse(saved);
+      const elapsed = Date.now() - s.loginTime;
+      if (elapsed < SESSION_DURATION && s.name && s.role) {
+        currentUser = s;
+        currentUser.loginTime = Date.now(); // reset timer on reload
+        localStorage.setItem('pt_session', JSON.stringify(currentUser));
+        bootApp();
+        return;
+      }
+    } catch(e) {}
+  }
+  showLoginScreen();
+};
+
+function showLoginScreen() {
+  document.getElementById('loginScreen').classList.remove('hidden');
+  document.getElementById('mainHeader').style.display = 'none';
+  document.getElementById('bottomNav').style.display  = 'none';
+  document.querySelectorAll('.screen').forEach(s => { s.style.display = 'none'; s.classList.remove('active'); });
+  pinBuffer = '';
+  updatePinDots();
+  clearErr('loginError');
+  loadStaffNames();
+  clearSelectedName();
+}
+
+function pinKey(d) {
+  if (pinBuffer.length >= 4) return;
+  pinBuffer += d;
+  updatePinDots();
+  if (pinBuffer.length === 4) {
+    setTimeout(attemptLogin, 200);
+  }
+}
+
+function pinDel() {
+  pinBuffer = pinBuffer.slice(0, -1);
+  updatePinDots();
+  clearErr('loginError');
+}
+
+function updatePinDots() {
+  for (let i = 0; i < 4; i++) {
+    document.getElementById('dot' + i).classList.toggle('filled', i < pinBuffer.length);
+  }
+}
+
+async function attemptLogin() {
+  const name = selectedName;
+  if (!name) {
+    showErr('loginError', '⚠️ Please select your name from the list.');
+    pinBuffer = ''; updatePinDots(); return;
+  }
+
+  showLoader('Verifying PIN...');
+  try {
+    const res  = await fetch(`${API}?action=verifyPin&pin=${encodeURIComponent(pinBuffer)}&name=${encodeURIComponent(name)}`);
+    const text = await res.text();
+    const data = JSON.parse(text);
+    hideLoader();
+
+    if (data.success && data.authenticated) {
+      // Clear failed attempts
+      clearLockData();
+      currentUser = { name: data.staffName || name, role: data.role, loginTime: Date.now() };
+      localStorage.setItem('pt_session', JSON.stringify(currentUser));
+      pinBuffer = ''; updatePinDots();
+      bootApp();
+    } else {
+      pinBuffer = ''; updatePinDots();
+      showErr('loginError', '❌ Wrong PIN. Please try again.');
+    }
+  } catch(e) {
+    hideLoader();
+    pinBuffer = ''; updatePinDots();
+    showErr('loginError', '❌ Connection error. Check internet and try again.');
+  }
+}
+
+// clearLockData kept for compatibility (clears any old lock data on login)
+function clearLockData() { localStorage.removeItem('pt_lock'); }
+
+// ════════════════════════════════════════════════════════════
+// ROLE PERMISSION HELPERS
+// ════════════════════════════════════════════════════════════
+function userRole() { return (currentUser ? currentUser.role : '').toLowerCase().trim(); }
+// Owner, Sales Mgr, Service Mgr, Yard Staff can log movement & receive
+function canLogMovement()   { return ['owner','sales manager','service manager','yard staff'].includes(userRole()); }
+// Everyone except Yard Staff sees dashboard & stock
+function canSeeDashboard()  { return userRole() !== 'yard staff'; }
+// Owner, Sales Mgr, Sales TL can allocate
+function canAllocate()      { return ['owner','sales manager','sales team leader','sales tl'].includes(userRole()); }
+// Owner, Sales Mgr, EDP, Sales TL see allocation status badges
+function canSeeAllocation() { return ['owner','sales manager','edp','sales team leader','sales tl'].includes(userRole()); }
+// Owner, Sales Mgr, EDP can enter TKM Billed
+function canEnterTKMBilled(){ return ['owner','sales manager','edp'].includes(userRole()); }
+// Owner only for staff management
+function canManageStaff()   { return userRole() === 'owner'; }
+// Move buttons in stock/drill
+function canMoveVehicle()   { return ['owner','sales manager','service manager'].includes(userRole()); }
+
+function bootApp() {
+  document.getElementById('loginScreen').classList.add('hidden');
+  document.getElementById('mainHeader').style.display = 'block';
+  document.getElementById('bottomNav').style.display  = 'flex';
+
+  // Session info
+  document.getElementById('sessionName').textContent = currentUser.name;
+  const badge = document.getElementById('sessionRoleBadge');
+  badge.textContent = currentUser.role;
+  badge.className = 'role-badge role-' + currentUser.role.toLowerCase().replace(/ /g,'-');
+
+  // Nav tabs visibility
+  document.getElementById('navLog').classList.toggle('hidden',     !canLogMovement());
+  document.getElementById('navReceive').classList.toggle('hidden', !canLogMovement());
+  document.getElementById('navDash').classList.toggle('hidden',    !canSeeDashboard());
+  document.getElementById('navStock').classList.toggle('hidden',   !canSeeDashboard());
+
+  // Button visibility
+  const staffBtn = document.getElementById('staffMgmtBtn');
+  if (staffBtn) staffBtn.style.display = canManageStaff() ? 'flex' : 'none';
+  const tkmBtn = document.getElementById('tkmBilledEntryBtn');
+  if (tkmBtn) tkmBtn.style.display = canEnterTKMBilled() ? 'flex' : 'none';
+
+  // DEBUG: Show role info briefly at top (remove after testing)
+  const _dbg = document.createElement('div');
+  _dbg.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#1A1A2E;color:white;font-size:13px;font-weight:700;text-align:center;padding:8px;z-index:9999;letter-spacing:0.5px';
+  _dbg.textContent = '🔑 Logged in as: ' + currentUser.name + ' | Role: ' + currentUser.role + ' | Access: ' + (canLogMovement()?'Movement ':'') + (canSeeDashboard()?'Dashboard ':'') + (canAllocate()?'Allocate ':'') + (canEnterTKMBilled()?'TKM':'');
+  document.body.prepend(_dbg);
+  setTimeout(() => _dbg.remove(), 8000);
+
+  // Start session timer
+  startSessionTimer();
+
+  // Boot data
+  document.getElementById('nfDispatch').value = new Date().toISOString().split('T')[0];
+  showRecent();
+  loadSuffixes();
+  loadPendingTransits();
+
+  // Starting tab — movement roles go to log, others go to dashboard
+  if (canLogMovement()) { switchTab('log'); }
+  else                  { switchTab('dash'); }
+
+  loadStaffNames();
+
+  document.addEventListener('touchstart', resetSessionTimer, { passive: true });
+  document.addEventListener('click', resetSessionTimer);
+  requestNotificationPermission();
+  updateOnlineStatus();
+  shiftStats = { movements: 0, dispatched: 0, received: 0, arrivals: 0, deliveries: 0 };
+  shiftMovements = [];
+}
+
+function startSessionTimer() {
+  if (sessionTimer) clearTimeout(sessionTimer);
+  if (warnTimer)    clearTimeout(warnTimer);
+
+  // Warn 5 minutes before expiry
+  warnTimer = setTimeout(() => {
+    document.getElementById('sessionExpiryWarn').classList.add('show');
+  }, SESSION_DURATION - WARN_BEFORE_EXPIRY);
+
+  // Auto logout
+  sessionTimer = setTimeout(() => {
+    logout(true);
+  }, SESSION_DURATION);
+}
+
+function resetSessionTimer() {
+  document.getElementById('sessionExpiryWarn').classList.remove('show');
+  currentUser.loginTime = Date.now();
+  localStorage.setItem('pt_session', JSON.stringify(currentUser));
+  startSessionTimer();
+}
+
+function logout(auto = false) {
+  if (sessionTimer) clearTimeout(sessionTimer);
+  if (warnTimer)    clearTimeout(warnTimer);
+  currentUser = null;
+  localStorage.removeItem('pt_session');
+  stopScan();
+  vehicle = null; selLoc = null;
+  if (auto) alert('⏱ Session expired. Please login again.');
+  showLoginScreen();
+}
+
+// ── TAB SWITCHING ─────────────────────────────────────────────────
+function switchTab(tab) {
+  // Guard based on role
+  if ((tab === 'dash' || tab === 'stock') && !canSeeDashboard()) return;
+  if ((tab === 'log'  || tab === 'receive') && !canLogMovement()) return;
+
+  activeTab = tab;
+  document.querySelectorAll('.screen').forEach(s => { s.style.display = 'none'; s.classList.remove('active'); });
+  const t = document.getElementById('tab-' + tab);
+  if (t) { t.style.display = 'block'; t.classList.add('active'); }
+
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  const nb = document.getElementById('nav' + tab.charAt(0).toUpperCase() + tab.slice(1));
+  if (nb) nb.classList.add('active');
+
+  const subs = { log:'Log Movement', receive:'Receive Vehicle', dash:'Live Dashboard', stock:'Stock Search' };
+  document.getElementById('headerSub').textContent = subs[tab] || 'Vehicle Tracker';
+
+  if (tab === 'dash')    { loadDashboard(); }
+  if (tab === 'stock')   { loadStock(); }
+  if (tab === 'receive') { loadPendingTransits(); }
+}
+
+// ── SUFFIX DATA ───────────────────────────────────────────────────
+async function loadSuffixes() {
+  try {
+    showLoader('Loading vehicle data...');
+    const res  = await fetch(API + '?action=getSuffixData');
+    const text = await res.text();
+    const data = JSON.parse(text);
+    if (data.success) { suffixes = data.rows; populateModels(); }
+    else throw new Error(data.error);
+  } catch(e) {
+    document.getElementById('homeError').innerHTML =
+      '<div class="alert alert-warn">⚠️ Could not load vehicle data. Check internet and refresh.</div>';
+  } finally { hideLoader(); }
+}
+
+function populateModels() {
+  const models = [...new Set(suffixes.map(r => r.model))].sort();
+  document.getElementById('nfModel').innerHTML = '<option value="">— Select Model —</option>' +
+    models.map(m => `<option>${m}</option>`).join('');
+}
+function ddVariant() {
+  const m = document.getElementById('nfModel').value;
+  const opts = [...new Set(suffixes.filter(r => r.model===m).map(r => r.variant))].sort();
+  setOpts('nfVariant', opts, '— Select Variant —');
+  setOpts('nfFuel',    [],   '— Select Fuel Type —');
+  setOpts('nfColour',  [],   '— Select Colour —');
+  setOpts('nfInterior',[],   '— Select Interior —');
+  document.getElementById('nfSuffix').value = '';
+}
+function ddFuel() {
+  const m = document.getElementById('nfModel').value, v = document.getElementById('nfVariant').value;
+  const opts = [...new Set(suffixes.filter(r => r.model===m && r.variant===v).map(r => r.fuel))].sort();
+  setOpts('nfFuel', opts, '— Select Fuel Type —');
+  setOpts('nfColour',  [], '— Select Colour —');
+  setOpts('nfInterior',[], '— Select Interior —');
+  document.getElementById('nfSuffix').value = '';
+}
+function ddColour() {
+  const m = document.getElementById('nfModel').value, v = document.getElementById('nfVariant').value, f = document.getElementById('nfFuel').value;
+  const opts = [...new Set(suffixes.filter(r => r.model===m && r.variant===v && r.fuel===f).map(r => r.colour))].sort();
+  setOpts('nfColour', opts, '— Select Colour —');
+  setOpts('nfInterior',[], '— Select Interior —');
+  document.getElementById('nfSuffix').value = '';
+}
+function ddInterior() {
+  const m = document.getElementById('nfModel').value, v = document.getElementById('nfVariant').value;
+  const f = document.getElementById('nfFuel').value,  c = document.getElementById('nfColour').value;
+  const matches = suffixes.filter(r => r.model===m && r.variant===v && r.fuel===f && r.colour===c);
+  const opts = [...new Set(matches.map(r => r.interior || '(None)'))].sort();
+  setOpts('nfInterior', opts, '— Select Interior —');
+  document.getElementById('nfSuffix').value = '';
+}
+function ddSuffix() {
+  const m = document.getElementById('nfModel').value, v = document.getElementById('nfVariant').value;
+  const f = document.getElementById('nfFuel').value,  c = document.getElementById('nfColour').value;
+  const i = document.getElementById('nfInterior').value;
+  const match = suffixes.find(r => r.model===m && r.variant===v && r.fuel===f && r.colour===c &&
+    (r.interior===i || (!r.interior && i==='(None)')));
+  const inp = document.getElementById('nfSuffix');
+  inp.value = match ? match.suffix : '— Not found —';
+  inp.style.borderColor = match ? 'var(--green)' : 'var(--red)';
+}
+function setOpts(id, arr, placeholder) {
+  document.getElementById(id).innerHTML = `<option value="">${placeholder}</option>` + arr.map(v => `<option>${v}</option>`).join('');
+}
+
+// ── QR SCANNER ───────────────────────────────────────────────────
+function startScan() { scanMode = 'log'; initScanner(); }
+function startScanForReceive() { scanMode = 'receive'; initScanner(); }
+
+async function initScanner() {
+  clearErr('scanError'); clearErr('rcvError');
+  detectedRaw = null;
+  const overlay = document.getElementById('scanOverlay');
+  overlay.style.display = 'flex'; overlay.style.flexDirection = 'column';
+  document.getElementById('scanResult').style.display = 'none';
+  document.getElementById('scanStatus').textContent = 'Starting camera...';
+  const vid = document.getElementById('scanVideo');
+  vid.muted = true; vid.playsInline = true;
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+    scanStr = stream; vid.srcObject = stream;
+    vid.onloadedmetadata = () => {
+      vid.play().then(() => { setStatus(`Camera live — ${vid.videoWidth}x${vid.videoHeight} — scanning...`); startFrameLoop(vid); })
+        .catch(e => setStatus('❌ Could not start video: ' + e.message, 'red'));
+    };
+  } catch(e) {
+    stopScan();
+    const msg = e.name === 'NotAllowedError' ? '📷 Camera permission denied.' : '📷 Camera not available: ' + e.message;
+    if (scanMode === 'receive') showErr('rcvError', msg); else showErr('scanError', msg);
+  }
+}
+
+function setStatus(msg, color) { const el = document.getElementById('scanStatus'); if (el) { el.textContent = msg; el.style.color = color || '#4CAF50'; } }
+
+function startFrameLoop(vid) {
+  const canvas = document.getElementById('scanCanvas');
+  const ctx    = canvas.getContext('2d', { willReadFrequently: true });
+  let   frames = 0;
+  if (window.ZXing) {
+    try {
+      const hints = new Map();
+      hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [ZXing.BarcodeFormat.QR_CODE, ZXing.BarcodeFormat.DATA_MATRIX, ZXing.BarcodeFormat.PDF_417, ZXing.BarcodeFormat.AZTEC, ZXing.BarcodeFormat.CODE_128, ZXing.BarcodeFormat.CODE_39]);
+      hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
+      const reader = new ZXing.MultiFormatReader(); reader.setHints(hints);
+      scanTmr = setInterval(() => {
+        frames++;
+        if (!vid.videoWidth || vid.readyState < 2) { if (frames % 10 === 0) setStatus(`Waiting for camera... (${frames})`); return; }
+        try {
+          canvas.width = vid.videoWidth; canvas.height = vid.videoHeight;
+          ctx.drawImage(vid, 0, 0);
+          if (frames % 15 === 0) setStatus(`Scanning frame ${frames} — ${canvas.width}x${canvas.height}`);
+          const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          const result  = reader.decode(new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(new ZXing.RGBLuminanceSource(imgData.data, canvas.width, canvas.height))));
+          if (result && result.getText()) { setStatus('✅ Code detected!', '#4CAF50'); showConfirm(result.getText()); }
+        } catch(e) { if (e.name && !e.name.includes('NotFoundException') && frames % 20 === 0) setStatus(`Scanning... (${frames})`, '#4CAF50'); }
+      }, 250);
+    } catch(e) { setStatus('❌ ZXing error: ' + e.message, 'red'); fallbackBarcodeDetector(vid, canvas, ctx); }
+  } else { fallbackBarcodeDetector(vid, canvas, ctx); }
+}
+
+function fallbackBarcodeDetector(vid, canvas, ctx) {
+  if ('BarcodeDetector' in window) {
+    BarcodeDetector.getSupportedFormats().then(fmts => {
+      const bd = new BarcodeDetector({ formats: fmts });
+      scanTmr = setInterval(async () => { try { const codes = await bd.detect(vid); if (codes.length > 0) showConfirm(codes[0].rawValue); } catch(e) {} }, 250);
+    });
+  } else { setStatus('❌ No scanner available on this device.', 'red'); }
+}
+
+function showConfirm(rawData) {
+  if (scanTmr) { clearInterval(scanTmr); scanTmr = null; }
+  detectedRaw = rawData;
+  const chassis = parseChassis(rawData);
+  document.getElementById('rawQRData').textContent       = rawData;
+  document.getElementById('detectedChassis').textContent = chassis;
+  document.getElementById('scanResult').style.display    = 'flex';
+  document.getElementById('scanResult').style.flexDirection = 'column';
+}
+
+function confirmScan() {
+  if (!detectedRaw) return;
+  const chassis = parseChassis(detectedRaw);
+  stopScan();
+  if (scanMode === 'receive') { document.getElementById('rcvChassisInput').value = chassis; findTransit(chassis); }
+  else if (scanMode === 'gate') { document.getElementById('geChassis').value = chassis; validateChassisFormat('geChassis','geChassisErr'); stopScan(); }
+  else { document.getElementById('chassisInput').value = chassis; findChassis(chassis); }
+}
+
+function rejectScan() {
+  detectedRaw = null;
+  document.getElementById('scanResult').style.display = 'none';
+  setStatus('Resuming scan...');
+  const vid = document.getElementById('scanVideo');
+  if (vid && scanStr) startFrameLoop(vid);
+}
+
+function stopScan() {
+  if (scanTmr) { clearInterval(scanTmr); scanTmr = null; }
+  if (scanStr) { scanStr.getTracks().forEach(t => t.stop()); scanStr = null; }
+  const vid = document.getElementById('scanVideo');
+  if (vid) { vid.pause(); vid.srcObject = null; }
+  document.getElementById('scanOverlay').style.display = 'none';
+}
+
+function parseChassis(raw) {
+  const cleaned = raw.trim().toUpperCase().replace(/\s+/g, ' ');
+  const vin17 = cleaned.match(/MA3[A-Z0-9]{14}/); if (vin17) return vin17[0];
+  const std17 = cleaned.match(/\b[A-Z0-9]{17}\b/); if (std17) return std17[0];
+  const kv = cleaned.match(/(?:CHASSIS\s*(?:NO\.?|NUMBER|#)?|FRAME\s*(?:NO\.?)?|VIN\s*(?:NO\.?)?)[:\s=]+([A-Z0-9]{8,20})/);
+  if (kv) return kv[1].trim();
+  if (cleaned.includes('HTTP') || cleaned.includes('WWW')) {
+    const urlPart = cleaned.split(/[\/\?&=]/).filter(p => p.match(/^[A-Z0-9]{8,20}$/)).pop();
+    if (urlPart) return urlPart;
+  }
+  const anyCode = cleaned.match(/[A-Z0-9]{8,17}/); if (anyCode) return anyCode[0];
+  return cleaned.replace(/[^A-Z0-9]/g, '').substring(0, 20) || raw.trim();
+}
+
+// ── CHASSIS LOOKUP ────────────────────────────────────────────────
+async function findChassis(chassis) {
+  const input = (chassis || document.getElementById('chassisInput').value).trim().toUpperCase();
+  if (!input || input.length < 5) { showErr('homeError', '⚠️ Enter a valid chassis number.'); return; }
+  showLoader('Looking up vehicle...'); clearErr('homeError');
+  try {
+    const res  = await fetch(`${API}?action=lookupChassis&chassis=${encodeURIComponent(input)}`);
+    const data = JSON.parse(await res.text());
+    hideLoader();
+    if (!data.success) throw new Error(data.error);
+    if (data.vehicle) { vehicle = data.vehicle; showVehicle(vehicle); }
+    else { document.getElementById('nfChassis').textContent = input; document.getElementById('nfChassisShow').value = input; vehicle = { chassis: input, isNew: true }; showScreen('screen-new'); }
+  } catch(e) { hideLoader(); showErr('homeError', '❌ Connection error. Check internet and try again.'); }
+}
+
+function showVehicle(v) {
+  document.getElementById('vModel').textContent    = v.model;
+  document.getElementById('vVariant').textContent  = v.variant;
+  document.getElementById('vSuffix').textContent   = v.suffix || '—';
+  document.getElementById('vFuel').textContent     = v.fuel;
+  document.getElementById('vColour').textContent   = v.colour;
+  document.getElementById('vLocation').textContent = '📍 ' + (v.location || '—');
+  document.getElementById('vChassis').textContent  = v.chassis;
+  document.getElementById('dvModel').textContent   = v.model + ' ' + v.variant;
+  document.getElementById('dvChassis').textContent = v.chassis;
+  ['Stockyard','Workshop','Showroom'].forEach(l => {
+    const btn = document.getElementById('loc' + l);
+    btn.classList.remove('current','selected');
+    if (l === v.location) btn.classList.add('current');
+  });
+  selLoc = null;
+  document.getElementById('staffName').value   = currentUser ? currentUser.name : '';
+  document.getElementById('driverName').value  = '';
+  document.getElementById('moveRemarks').value = '';
+  clearErr('moveError');
+  const al = document.getElementById('vehicleAlerts');
+  al.innerHTML = '';
+  if (v.status === 'In Transit') al.innerHTML += `<div class="alert alert-transit">🚚 This vehicle is <b>In Transit</b> to <b>${v.transitTo||'?'}</b>. Use Receive tab to confirm.</div>`;
+  if (v.status === 'Sold-Not Delivered') al.innerHTML += '<div class="alert alert-warn">⚑ This vehicle is <b>Sold — Not Delivered</b>.</div>';
+  if (parseInt(v.days) >= 45) al.innerHTML += `<div class="alert alert-error">🔴 <b>${v.days} days</b> in system — urgent action needed.</div>`;
+  showScreen('screen-vehicle');
+  if (typeof showVehicleAllocation === 'function') showVehicleAllocation(vehicle);
+}
+
+function selectLoc(loc) {
+  selLoc = loc;
+  ['Stockyard','Workshop','Showroom'].forEach(l => {
+    const btn = document.getElementById('loc' + l);
+    if (!btn.classList.contains('current')) btn.classList.remove('selected');
+  });
+  document.getElementById('loc' + loc).classList.add('selected');
+}
+
+async function confirmMove() {
+  const staff      = currentUser ? currentUser.name : '';
+  const driverName = document.getElementById('driverName').value.trim();
+  const remarks    = document.getElementById('moveRemarks').value.trim();
+  if (!selLoc) { showErr('moveError','⚠️ Please select a destination.'); return; }
+  if (!driverName) { showErr('moveError','⚠️ Please enter the driver name.'); return; }
+  clearErr('moveError');
+  showLoader('Dispatching vehicle...');
+  try {
+    await postAPIWithQueue({ action:'logMovement', chassis:vehicle.chassis, suffix:vehicle.suffix,
+      model:vehicle.model, variant:vehicle.variant, fuel:vehicle.fuel,
+      from:vehicle.location, to:selLoc, staff, role: currentUser ? currentUser.role : 'Yard Staff',
+      driverName, remarks, via:'PWA', timestamp:new Date().toISOString(), status:'In Transit' });
+    saveRecent({ model:vehicle.model, variant:vehicle.variant, suffix:vehicle.suffix, from:vehicle.location, to:selLoc, staff, transit:true });
+    // Schedule 30-min transit alert
+    scheduleTransitAlert(vehicle.model, vehicle.chassis, vehicle.location, selLoc);
+    // Update shift stats
+    shiftStats.movements++; shiftStats.dispatched++;
+    shiftMovements.push({ time:new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}), model:vehicle.model+' '+vehicle.variant, chassis:vehicle.chassis, from:vehicle.location, to:selLoc, action:'Dispatched', driver:driverName });
+    hideLoader();
+    showSuccess('🚚','Vehicle Dispatched!','Vehicle is now In Transit. Receiver must confirm on Receive tab.',[
+      { k:'Vehicle',      v:`${vehicle.model} ${vehicle.variant}` },
+      { k:'Chassis',      v: vehicle.chassis },
+      { k:'From',         v: vehicle.location || '—' },
+      { k:'To (Expected)',v: selLoc },
+      { k:'Dispatched By',v: staff },
+      { k:'Driver',       v: driverName },
+      { k:'Status',       v: 'In Transit — Awaiting Confirmation' },
+      { k:'Time',         v: new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}) },
+    ]);
+  } catch(e) { hideLoader(); showErr('moveError','❌ Failed. Check internet and try again.'); }
+}
+
+async function registerVehicle() {
+  const model = document.getElementById('nfModel').value, variant = document.getElementById('nfVariant').value;
+  const fuel  = document.getElementById('nfFuel').value,  colour  = document.getElementById('nfColour').value;
+  const interior = document.getElementById('nfInterior').value, suffix = document.getElementById('nfSuffix').value;
+  const dispatch = document.getElementById('nfDispatch').value, recvBy = document.getElementById('nfReceivedBy').value.trim();
+  if (!model || !variant || !fuel || !colour || !interior) { showErr('nfError','⚠️ Please fill all specification fields.'); return; }
+  if (!recvBy) { showErr('nfError','⚠️ Please enter who received this vehicle.'); return; }
+  clearErr('nfError'); showLoader('Registering vehicle...');
+  try {
+    await postAPI({ action:'addNewVehicle', chassis:vehicle.chassis, model, variant, fuel, colour, interior, suffix, dispatch,
+      receivedBy:recvBy, location:'Stockyard', status:'In Stock', arrival:new Date().toISOString().split('T')[0], timestamp:new Date().toISOString() });
+    hideLoader();
+    showSuccess('🚗','Vehicle Registered!','Added to Vehicle Master & logged in Movement Log.',[
+      { k:'Chassis', v: vehicle.chassis }, { k:'Model', v:`${model} ${variant}` },
+      { k:'Suffix', v: suffix }, { k:'Colour', v: colour }, { k:'Location', v: 'Stockyard' }, { k:'Received By', v: recvBy },
+    ]);
+  } catch(e) { hideLoader(); showErr('nfError','❌ Registration failed. Try again.'); }
+}
+
+function openDelivery() {
+  document.getElementById('dCustomer').value = '';
+  document.getElementById('dInvoice').value  = '';
+  document.getElementById('dBy').value       = currentUser ? currentUser.name : '';
+  document.getElementById('dRemarks').value  = '';
+  clearErr('dError');
+  document.getElementById('modalDelivery').classList.add('show');
+}
+function closeDelivery() { document.getElementById('modalDelivery').classList.remove('show'); }
+
+async function confirmDelivery() {
+  const customer = document.getElementById('dCustomer').value.trim();
+  const invoice  = document.getElementById('dInvoice').value.trim();
+  const delBy    = currentUser ? currentUser.name : '';
+  const remarks  = document.getElementById('dRemarks').value.trim();
+  if (!customer) { showErr('dError','⚠️ Customer name required.'); return; }
+  if (!invoice)  { showErr('dError','⚠️ Invoice number required.'); return; }
+  clearErr('dError'); closeDelivery(); showLoader('Processing delivery...');
+  try {
+    shiftStats.movements++; shiftStats.deliveries++;
+    await postAPIWithQueue({ action:'deliverVehicle', chassis:vehicle.chassis, suffix:vehicle.suffix,
+      model:vehicle.model, variant:vehicle.variant, colour:vehicle.colour, interior:vehicle.interior,
+      customer, invoice, deliveredBy:delBy, remarks, timestamp:new Date().toISOString() });
+    hideLoader();
+    showSuccess('🎉','Vehicle Delivered!','Removed from stock. Archived permanently.',[
+      { k:'Vehicle', v:`${vehicle.model} ${vehicle.variant}` }, { k:'Chassis', v: vehicle.chassis },
+      { k:'Customer', v: customer }, { k:'Invoice', v: invoice }, { k:'By', v: delBy },
+      { k:'Time', v: new Date().toLocaleTimeString('en-IN') },
+    ]);
+  } catch(e) { hideLoader(); showErr('moveError','❌ Delivery failed. Try again.'); }
+}
+
+// ── RECEIVE ───────────────────────────────────────────────────────
+async function findTransit(chassis) {
+  const input = (chassis || document.getElementById('rcvChassisInput').value).trim().toUpperCase();
+  if (!input || input.length < 5) { showErr('rcvError','⚠️ Enter a valid chassis number.'); return; }
+  showLoader('Looking up transit vehicle...'); clearErr('rcvError');
+  try {
+    const data = JSON.parse(await (await fetch(`${API}?action=lookupChassis&chassis=${encodeURIComponent(input)}`)).text());
+    hideLoader();
+    if (!data.success) throw new Error(data.error);
+    if (!data.vehicle) { showErr('rcvError','❌ Vehicle not found in system.'); return; }
+    if (data.vehicle.status !== 'In Transit') { showErr('rcvError', `⚠️ This vehicle is not In Transit. Status: <b>${data.vehicle.status}</b> at <b>${data.vehicle.location}</b>.`); return; }
+    rcvVehicle = data.vehicle;
+    document.getElementById('rcvModel').textContent   = rcvVehicle.model;
+    document.getElementById('rcvVariant').textContent = rcvVehicle.variant + ' | ' + rcvVehicle.colour;
+    document.getElementById('rcvFrom').textContent    = rcvVehicle.transitFrom || '—';
+    document.getElementById('rcvTo').textContent      = rcvVehicle.transitTo   || rcvVehicle.location || '—';
+    document.getElementById('rcvSentBy').textContent  = rcvVehicle.transitBy   || '—';
+    document.getElementById('rcvTransitTime').textContent = rcvVehicle.transitAt
+      ? 'Dispatched: ' + new Date(rcvVehicle.transitAt).toLocaleString('en-IN',{hour:'2-digit',minute:'2-digit',day:'2-digit',month:'short'}) : '';
+    document.getElementById('rcvStaffName').value = currentUser ? currentUser.name : '';
+    document.getElementById('rcvDriverNameShow').textContent = rcvVehicle.transitDriver || '—';
+    document.getElementById('rcvDriverName').value = '';
+    document.getElementById('rcvVehicleCard').style.display     = 'block';
+    document.getElementById('pendingTransitCard').style.display = 'none';
+  } catch(e) { hideLoader(); showErr('rcvError','❌ Connection error. Check internet and try again.'); }
+}
+
+async function confirmReceipt() {
+  if (!rcvVehicle) return;
+  const staff      = currentUser ? currentUser.name : '';
+  const driverName = document.getElementById('rcvDriverName').value.trim();
+  const remarks    = document.getElementById('rcvRemarks').value.trim();
+  if (!driverName) { showErr('rcvConfirmError','⚠️ Please enter the driver name.'); return; }
+  clearErr('rcvConfirmError'); showLoader('Confirming receipt...');
+  try {
+    await postAPIWithQueue({ action:'receiveVehicle', chassis:rcvVehicle.chassis, model:rcvVehicle.model,
+      variant:rcvVehicle.variant, to:rcvVehicle.transitTo||rcvVehicle.location,
+      from:rcvVehicle.transitFrom, staff, driverName, remarks, timestamp:new Date().toISOString() });
+    // Cancel transit alert if received
+    if (transitAlertTimer) { clearTimeout(transitAlertTimer); transitAlertTimer = null; }
+    shiftStats.movements++; shiftStats.received++;
+    shiftMovements.push({ time:new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}), model:rcvVehicle.model+' '+rcvVehicle.variant, chassis:rcvVehicle.chassis, from:rcvVehicle.transitFrom, to:rcvVehicle.transitTo||rcvVehicle.location, action:'Received', driver:driverName });
+    hideLoader(); resetReceive();
+    showSuccess('✅','Vehicle Received!','Transit confirmed. Location updated.',[
+      { k:'Vehicle',     v:`${rcvVehicle.model} ${rcvVehicle.variant}` },
+      { k:'Chassis',     v: rcvVehicle.chassis },
+      { k:'Arrived At',  v: rcvVehicle.transitTo||rcvVehicle.location },
+      { k:'Driver',      v: driverName },
+      { k:'Received By', v: staff },
+      { k:'Time',        v: new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}) },
+    ]);
+  } catch(e) { hideLoader(); showErr('rcvConfirmError','❌ Failed. Check internet and try again.'); }
+}
+
+function resetReceive() {
+  rcvVehicle = null;
+  document.getElementById('rcvChassisInput').value = '';
+  document.getElementById('rcvStaffName').value    = '';
+  document.getElementById('rcvDriverName').value   = '';
+  document.getElementById('rcvRemarks').value      = '';
+  document.getElementById('rcvVehicleCard').style.display     = 'none';
+  document.getElementById('pendingTransitCard').style.display = 'block';
+  clearErr('rcvError'); clearErr('rcvConfirmError');
+}
+
+async function loadPendingTransits() {
+  const el = document.getElementById('pendingTransitList');
+  try {
+    const data = JSON.parse(await (await fetch(`${API}?action=getPendingTransits`)).text());
+    if (!data.success || !data.transits || !data.transits.length) {
+      el.innerHTML = '<div class="empty-state"><div class="e-icon">✅</div><div class="e-text">No pending transits</div><div class="e-sub">All vehicles are at confirmed locations</div></div>';
+      return;
+    }
+    el.innerHTML = data.transits.map(t => {
+      const elapsed = t.timestamp ? Math.round((Date.now() - new Date(t.timestamp)) / 60000) : 0;
+      const urgent  = elapsed > 120;
+      return `<div class="transit-alert-row" onclick="document.getElementById('rcvChassisInput').value='${t.chassis}';findTransit('${t.chassis}')">
+        <div class="ta-model">${urgent?'⚠️':'🚚'} ${t.model} ${t.variant}</div>
+        <div class="ta-info">${t.from||'?'} → <strong>${t.to||'?'}</strong> | By: ${t.staff||'?'}</div>
+        <div class="ta-time">${elapsed > 0 ? elapsed + ' mins ago' : 'Just now'}${urgent?' — OVERDUE':''}</div>
+      </div>`;
+    }).join('');
+  } catch(e) { el.innerHTML = '<div class="alert alert-warn">⚠️ Could not load pending transits.</div>'; }
+}
+
+// ── DASHBOARD ─────────────────────────────────────────────────────
+async function loadDashboard() {
+  document.getElementById('dashLastUpdated').textContent = 'Updating...';
+  try {
+    // Fetch both dashboard stats AND full stock list in parallel
+    // so clicking location cards immediately shows vehicle list
+    const [dashRes, stockRes] = await Promise.all([
+      fetch(`${API}?action=getDashboard`),
+      fetch(`${API}?action=getAllStock`)
+    ]);
+    const dashJson  = JSON.parse(await dashRes.text());
+    const stockJson = JSON.parse(await stockRes.text());
+    if (!dashJson.success) throw new Error(dashJson.error);
+    if (stockJson.success) allStock = stockJson.stock || [];
+    const data = dashJson;
+    const d = data.dashboard;
+    document.getElementById('dTotal').textContent    = d.total    || 0;
+    document.getElementById('dStockyard').textContent= d.stockyard|| 0;
+    document.getElementById('dWorkshop').textContent = d.workshop  || 0;
+    document.getElementById('dShowroom').textContent = d.showroom  || 0;
+    document.getElementById('dTransit').textContent  = d.transit || 0;
+    const _el=document.getElementById('dTKMBilled');if(_el)_el.textContent=d.tkmBilled||0;
+    document.getElementById('dashLastUpdated').textContent = 'Updated ' + new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+    const mEl = document.getElementById('modelWiseList');
+    if (d.models && d.models.length) {
+      const max = Math.max(...d.models.map(m => m.count));
+      mEl.innerHTML = d.models.map(m => `
+        <div class="model-row">
+          <div class="model-name">${m.model}</div>
+          <div class="model-bar-wrap"><div class="model-bar" style="width:${max>0?Math.round(m.count/max*100):0}%"></div></div>
+          <div class="model-count">${m.count}</div>
+        </div>`).join('');
+    } else { mEl.innerHTML = '<div class="empty-state"><div class="e-icon">🚗</div><div class="e-text">No stock data</div></div>'; }
+    if (d.overdueTransits && d.overdueTransits.length) {
+      document.getElementById('transitAlertCard').style.display = 'block';
+      document.getElementById('transitAlertList').innerHTML = d.overdueTransits.map(t => {
+        const elapsed = t.timestamp ? Math.round((Date.now() - new Date(t.timestamp)) / 60000) : 0;
+        return `<div class="transit-alert-row"><div class="ta-model">⚠️ ${t.model} ${t.variant}</div>
+          <div class="ta-info">${t.from} → ${t.to} | ${t.staff}</div>
+          <div class="ta-time">In transit ${elapsed} mins — NOT CONFIRMED</div></div>`;
+      }).join('');
+    } else { document.getElementById('transitAlertCard').style.display = 'none'; }
+    const rEl = document.getElementById('recentActivityList');
+    if (d.recentActivity && d.recentActivity.length) {
+      rEl.innerHTML = d.recentActivity.map(a => {
+        const dotClass = a.action==='In Transit'?'transit':a.action==='Received'?'received':a.action==='Delivered'?'delivered':'';
+        return `<div class="history-timeline" style="margin-bottom:0"><div class="ht-item">
+          <div class="ht-dot ${dotClass}"></div>
+          <div class="ht-content">
+            <div class="ht-action">${a.model} ${a.variant} — ${a.action}</div>
+            <div class="ht-detail">${a.from?a.from+' → '+a.to:a.to||''} | ${a.staff||''}</div>
+            <div class="ht-time">${a.time||''}</div>
+          </div></div></div>`;
+      }).join('');
+    } else { rEl.innerHTML = '<div class="empty-state"><div class="e-icon">📋</div><div class="e-text">No recent activity</div></div>'; }
+  } catch(e) { document.getElementById('dashLastUpdated').textContent = 'Update failed'; console.error(e); }
+}
+
+// ── STOCK SEARCH ──────────────────────────────────────────────────
+async function loadStock() {
+  document.getElementById('stockCount').textContent = 'Loading...';
+  document.getElementById('stockList').innerHTML = '<div class="empty-state"><div class="e-icon">🔄</div><div class="e-text">Loading stock...</div></div>';
+  try {
+    const data = JSON.parse(await (await fetch(`${API}?action=getAllStock`)).text());
+    if (!data.success) throw new Error(data.error);
+    allStock = data.stock || [];
+    renderStock();
+  } catch(e) { document.getElementById('stockList').innerHTML = '<div class="alert alert-error">❌ Could not load stock.</div>'; }
+}
+
+function setFilter(f) { stockFilter = f; renderStock(); }
+function filterStock() { renderStock(); }
+
+function renderStock() {
+  const q = (document.getElementById('stockSearch').value || '').toUpperCase().trim();
+  let items = allStock;
+  if (stockFilter !== 'ALL') items = items.filter(v => v.location === stockFilter || (stockFilter === 'In Transit' && v.status === 'In Transit'));
+  if (q) items = items.filter(v => (v.chassis||'').includes(q)||(v.model||'').toUpperCase().includes(q)||(v.colour||'').toUpperCase().includes(q)||(v.variant||'').toUpperCase().includes(q)||(v.suffix||'').toUpperCase().includes(q));
+  document.getElementById('stockCount').textContent = `${items.length} vehicle${items.length!==1?'s':''} found`;
+  if (!items.length) { document.getElementById('stockList').innerHTML = '<div class="empty-state"><div class="e-icon">🔍</div><div class="e-text">No vehicles found</div></div>'; return; }
+  const canMove = canMoveVehicle();
+  document.getElementById('stockList').innerHTML = items.map(v => {
+    const loc  = v.status==='In Transit'?'In Transit':(v.location||'Unknown');
+    const pill = loc==='In Transit'?'transit':loc.toLowerCase().replace(' ','');
+    const daysColor = parseInt(v.days)>=45?'var(--red)':parseInt(v.days)>=30?'var(--transit)':'#999';
+    const moveBtn = canMove && v.status !== 'In Transit'
+      ? `<button class="move-btn" style="margin-top:8px;width:100%" onclick="moveFromStock('${v.chassis}',event)">🚗 Move Vehicle</button>`
+      : '';
+    return `<div class="chassis-row" onclick="showChassisDetail('${v.chassis}')">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div class="cr-model">${v.model} ${v.variant} <span style="color:var(--red);font-size:11px">${v.suffix||''}</span></div>
+        ${v.days?`<span style="font-size:10px;color:${daysColor};font-weight:700">${v.days}d</span>`:''}
+      </div>
+      <div class="cr-chassis">${v.chassis}</div>
+      <div class="cr-loc"><span class="loc-pill pill-${pill}">${loc}</span>${canSeeAllocation() ? (v.allocatedTo ? '<span class="loc-pill pill-allocated" style="margin-left:5px">Allocated</span>' : '<span class="loc-pill pill-available" style="margin-left:5px">Available</span>') : ''}
+        <span style="font-size:10px;color:#aaa;margin-left:6px">${v.colour||''} ${v.fuel?'| '+v.fuel:''}</span></div>
+      ${moveBtn}
+    </div>`;
+  }).join('');
+}
+
+async function showChassisDetail(chassis) {
+  document.getElementById('chassisDetailOverlay').classList.add('show');
+  document.getElementById('cdTitle').textContent = chassis;
+  document.getElementById('cdBody').innerHTML = '<div class="empty-state"><div class="e-icon">🔄</div><div class="e-text">Loading history...</div></div>';
+  try {
+    const data = JSON.parse(await (await fetch(`${API}?action=getChassisHistory&chassis=${encodeURIComponent(chassis)}`)).text());
+    if (!data.success) throw new Error(data.error);
+    const v = data.vehicle || {}, h = data.history || [];
+    const loc  = v.status==='In Transit'?'In Transit':(v.location||'—');
+    const pill = loc==='In Transit'?'transit':loc.toLowerCase().replace(' ','');
+    document.getElementById('cdTitle').textContent = `${v.model||''} ${v.variant||''}`;
+    document.getElementById('cdBody').innerHTML = `
+      <div class="v-card" style="margin-bottom:14px">
+        <div class="v-model">${v.model||'—'} ${v.variant||''}</div>
+        <div class="v-variant">${v.colour||''} | ${v.fuel||''} | ${v.suffix||''}</div>
+        <div class="v-tags"><span class="tag ${loc==='In Transit'?'tag-orange':'tag-red'}">${loc}</span>${v.days?`<span class="tag">${v.days} days</span>`:''}</div>
+        <div class="v-chassis">${chassis}</div>
+      </div>
+      <div style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:10px">Movement History</div>
+      ${h.length?`<div class="history-timeline">${h.map(m=>{
+        const dc=m.status==='In Transit'?'transit':m.status==='Received'?'received':m.status==='Delivered'?'delivered':'';
+        return `<div class="ht-item"><div class="ht-dot ${dc}"></div><div class="ht-content">
+          <div class="ht-action">${m.action||(m.from?m.from+' → '+m.to:m.to)}</div>
+          <div class="ht-detail">${m.staff?'By: '+m.staff:''} ${m.remarks?'| '+m.remarks:''}</div>
+          <div class="ht-time">${m.time||m.timestamp||''}</div>
+        </div></div>`;}).join('')}</div>`
+      :'<div class="empty-state"><div class="e-icon">📋</div><div class="e-text">No movement history</div></div>'}`;
+  } catch(e) { document.getElementById('cdBody').innerHTML = '<div class="alert alert-error">❌ Could not load history.</div>'; }
+}
+function closeChassisDetail() { document.getElementById('chassisDetailOverlay').classList.remove('show'); }
+
+// ── API HELPERS ───────────────────────────────────────────────────
+async function postAPI(payload) {
+  const res  = await fetch(API, { method:'POST', headers:{'Content-Type':'text/plain'}, body:JSON.stringify(payload) });
+  const data = JSON.parse(await res.text());
+  if (!data.success) throw new Error(data.error || 'API error');
+  return data;
+}
+
+function saveRecent(m) {
+  recent.unshift({ ...m, time: new Date().toLocaleString('en-IN',{hour:'2-digit',minute:'2-digit',day:'2-digit',month:'short'}) });
+  recent = recent.slice(0,8);
+  localStorage.setItem('pt_recent', JSON.stringify(recent));
+}
+function showRecent() {
+  if (!recent.length) return;
+  document.getElementById('recentCard').style.display = 'block';
+  document.getElementById('recentList').innerHTML = recent.slice(0,4).map(m => `
+    <div class="history-item${m.transit?' transit':''}">
+      <div class="hi-model">${m.model} ${m.variant} <span style="color:var(--red);font-size:11px">${m.suffix||''}</span></div>
+      <div class="hi-move">${m.transit?'🚚':'📍'} ${m.from||'—'} → <b>${m.to}</b> | ${m.staff}</div>
+      <div class="hi-time">${m.time}</div>
+    </div>`).join('');
+}
+
+function showSuccess(icon, title, sub, rows) {
+  document.getElementById('sIcon').textContent  = icon;
+  document.getElementById('sTitle').textContent = title;
+  document.getElementById('sSub').textContent   = sub;
+  document.getElementById('sDetail').innerHTML  = rows.map(r =>
+    `<div class="detail-row"><span class="key">${r.k}</span><span class="value">${r.v}</span></div>`).join('');
+  showScreen('screen-success');
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => { s.style.display='none'; s.classList.remove('active'); });
+  const el = document.getElementById(id);
+  if (el) { el.style.display='block'; el.classList.add('active'); }
+  window.scrollTo(0,0);
+}
+
+function goHome() {
+  stopScan(); vehicle = null; selLoc = null;
+  document.getElementById('chassisInput').value = '';
+  clearErr('homeError'); clearErr('scanError');
+  showRecent(); switchTab('log');
+}
+
+function showErr(id, msg) { const el = document.getElementById(id); if(el) el.innerHTML = `<div class="alert alert-error">${msg}</div>`; }
+function clearErr(id)     { const el = document.getElementById(id); if(el) el.innerHTML = ''; }
+function showLoader(t) { document.getElementById('loaderText').textContent = t||'Please wait...'; document.getElementById('loader').classList.add('show'); }
+function hideLoader() { document.getElementById('loader').classList.remove('show'); }
+
+
+
+
+// ════════════════════════════════════════════════════════════════
+// NAME DROPDOWN — LOGIN
+// ════════════════════════════════════════════════════════════════
+let staffList      = [];  // loaded from sheet
+let selectedName   = '';  // chosen name
+
+async function loadStaffNames() {
+  try {
+    const data = JSON.parse(await (await fetch(`${API}?action=getStaffList`)).text());
+    if (data.success) {
+      staffList = data.staff.filter(s => s.status === 'Active');
+      renderNameList(staffList);
+    }
+  } catch(e) { console.warn('Could not load staff list:', e); }
+}
+
+function renderNameList(list) {
+  const el = document.getElementById('nameDropdownList');
+  if (!list.length) {
+    el.innerHTML = '<div style="padding:12px;text-align:center;color:#aaa;font-size:13px">No staff found</div>';
+    return;
+  }
+  const roleColors = { owner:'#FFD700', manager:'#17A2B8', 'yard staff':'#28A745' };
+  el.innerHTML = list.map(s => {
+    const rc = roleColors[s.role.toLowerCase()] || '#888';
+    return `<div class="name-option" onclick="selectName('${s.name}','${s.role}')">
+      <span class="name-option-name">${s.name}</span>
+      <span class="name-option-role" style="background:${rc};color:${s.role.toLowerCase()==='owner'?'#1A1A2E':'white'}">${s.role}</span>
+    </div>`;
+  }).join('');
+}
+
+function filterNames() {
+  const q = document.getElementById('nameSearch').value.trim().toLowerCase();
+  const filtered = q ? staffList.filter(s => s.name.toLowerCase().includes(q)) : staffList;
+  renderNameList(filtered);
+  document.getElementById('nameDropdownList').classList.add('show');
+}
+
+function showNameList() {
+  renderNameList(staffList);
+  document.getElementById('nameDropdownList').classList.add('show');
+}
+
+function selectName(name, role) {
+  selectedName = name;
+  document.getElementById('selectedNameText').textContent = name;
+  document.getElementById('selectedNameChip').classList.add('show');
+  document.getElementById('nameDropdownWrap').style.display = 'none';
+  document.getElementById('nameDropdownList').classList.remove('show');
+  clearErr('loginError');
+  // Focus moves to PIN — reset pin buffer
+  pinBuffer = ''; updatePinDots();
+}
+
+function clearSelectedName() {
+  selectedName = '';
+  pinBuffer = ''; updatePinDots();
+  document.getElementById('selectedNameChip').classList.remove('show');
+  document.getElementById('nameDropdownWrap').style.display = 'block';
+  document.getElementById('nameSearch').value = '';
+  renderNameList(staffList);
+  clearErr('loginError');
+}
+
+// Close dropdown when tapping outside
+document.addEventListener('click', function(e) {
+  const wrap = document.getElementById('nameDropdownWrap');
+  const list = document.getElementById('nameDropdownList');
+  if (wrap && list && !wrap.contains(e.target)) list.classList.remove('show');
+});
+
+// ════════════════════════════════════════════════════════════════
+// PROFILE MENU
+// ════════════════════════════════════════════════════════════════
+function openProfileMenu() {
+  document.getElementById('profileMenuName').textContent = currentUser.name;
+  document.getElementById('profileMenuRole').textContent = currentUser.role.toUpperCase() + ' — Planet Toyota';
+  document.getElementById('staffMgmtBtn').style.display = canManageStaff() ? 'flex' : 'none';
+  document.getElementById('profileMenuOverlay').classList.add('show');
+}
+function closeProfileMenu() { document.getElementById('profileMenuOverlay').classList.remove('show'); }
+
+// ════════════════════════════════════════════════════════════════
+// STAFF MANAGEMENT PANEL
+// ════════════════════════════════════════════════════════════════
+let allStaffData = [];
+let editingRow   = null;
+
+async function openStaffPanel() {
+  document.getElementById('staffPanelOverlay').classList.add('show');
+  resetStaffForm();
+  await refreshStaffList();
+}
+function closeStaffPanel() { document.getElementById('staffPanelOverlay').classList.remove('show'); }
+
+async function refreshStaffList() {
+  const el = document.getElementById('staffList');
+  el.innerHTML = '<div class="empty-state"><div class="e-icon">🔄</div><div class="e-text">Loading...</div></div>';
+  try {
+    const data = JSON.parse(await (await fetch(`${API}?action=getStaffList`)).text());
+    if (!data.success) throw new Error(data.error);
+    allStaffData = data.staff || [];
+    // Also refresh dropdown list
+    staffList = allStaffData.filter(s => s.status === 'Active');
+
+    if (!allStaffData.length) {
+      el.innerHTML = '<div class="empty-state"><div class="e-icon">👥</div><div class="e-text">No staff found</div></div>';
+      return;
+    }
+
+    const roleColors = { owner:'#FFD700', manager:'#17A2B8', 'yard staff':'#28A745' };
+    const avatarColors = ['#EB0A1E','#1A1A2E','#28A745','#17A2B8','#FF6B35','#6F42C1'];
+
+    el.innerHTML = allStaffData.map((s, idx) => {
+      const rc  = roleColors[s.role.toLowerCase()] || '#888';
+      const ac  = avatarColors[idx % avatarColors.length];
+      const ini = s.name.split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
+      const isActive = s.status === 'Active';
+      return `<div class="staff-item${isActive?'':' inactive'}">
+        <div class="staff-avatar" style="background:${ac}">${ini}</div>
+        <div class="staff-info">
+          <div class="staff-name">${s.name}</div>
+          <div class="staff-meta">
+            <span style="background:${rc};color:${s.role.toLowerCase()==='owner'?'#1A1A2E':'white'};padding:1px 7px;border-radius:8px;font-size:10px;font-weight:700">${s.role}</span>
+            <span style="margin-left:6px;font-size:10px;color:${isActive?'#28A745':'#aaa'};font-weight:700">${isActive?'● Active':'○ Inactive'}</span>
+          </div>
+        </div>
+        <div class="staff-actions">
+          <button class="sa-btn sa-edit" onclick="editStaff(${s.row},'${s.name.replace(/'/g,"\'")}','${s.role}')">✏️</button>
+          ${isActive
+            ? `<button class="sa-btn sa-deact" onclick="toggleStaffStatus(${s.row},'Inactive','${s.name.replace(/'/g,"\'")}')">🚫</button>`
+            : `<button class="sa-btn sa-react" onclick="toggleStaffStatus(${s.row},'Active','${s.name.replace(/'/g,"\'")}')">✅</button>`
+          }
+        </div>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    el.innerHTML = '<div class="alert alert-error">❌ Could not load staff list.</div>';
+  }
+}
+
+function editStaff(row, name, role) {
+  editingRow = row;
+  document.getElementById('staffFormTitle').textContent = '✏️ Edit Staff';
+  document.getElementById('sfName').value  = name;
+  document.getElementById('sfRole').value  = role;
+  document.getElementById('sfPin').value   = '';
+  document.getElementById('sfPin').placeholder = 'New PIN (leave blank to keep)';
+  document.getElementById('sfEditRow').value = row;
+  document.getElementById('sfErr').classList.remove('show');
+  document.getElementById('sfOk').classList.remove('show');
+  // Scroll to form
+  document.querySelector('.staff-panel-body').scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function resetStaffForm() {
+  editingRow = null;
+  document.getElementById('staffFormTitle').textContent = '➕ Add New Staff';
+  document.getElementById('sfName').value  = '';
+  document.getElementById('sfRole').value  = '';
+  document.getElementById('sfPin').value   = '';
+  document.getElementById('sfPin').placeholder = '4-digit PIN *';
+  document.getElementById('sfEditRow').value = '';
+  document.getElementById('sfErr').classList.remove('show');
+  document.getElementById('sfOk').classList.remove('show');
+}
+
+async function saveStaff() {
+  const name    = document.getElementById('sfName').value.trim();
+  const role    = document.getElementById('sfRole').value;
+  const pin     = document.getElementById('sfPin').value.trim();
+  const editRow = document.getElementById('sfEditRow').value;
+  const errEl   = document.getElementById('sfErr');
+  const okEl    = document.getElementById('sfOk');
+
+  errEl.classList.remove('show'); okEl.classList.remove('show');
+
+  if (!name) { errEl.textContent = '⚠️ Name is required.'; errEl.classList.add('show'); return; }
+  if (!role) { errEl.textContent = '⚠️ Please select a role.'; errEl.classList.add('show'); return; }
+
+  const isEdit = !!editRow;
+
+  if (!isEdit && (!pin || pin.length !== 4 || !/^\d{4}$/.test(pin))) {
+    errEl.textContent = '⚠️ PIN must be exactly 4 digits.'; errEl.classList.add('show'); return;
+  }
+  if (pin && (pin.length !== 4 || !/^\d{4}$/.test(pin))) {
+    errEl.textContent = '⚠️ PIN must be exactly 4 digits.'; errEl.classList.add('show'); return;
+  }
+
+  showLoader(isEdit ? 'Updating staff...' : 'Adding staff...');
+  try {
+    const payload = isEdit
+      ? { action:'editStaff',  row:parseInt(editRow), name, role, pin: pin || null }
+      : { action:'addStaff',   name, role, pin };
+
+    const data = JSON.parse(await (await fetch(API, {
+      method:'POST', headers:{'Content-Type':'text/plain'}, body:JSON.stringify(payload)
+    })).text());
+
+    hideLoader();
+    if (data.success) {
+      okEl.textContent = isEdit ? '✅ Staff updated successfully!' : '✅ Staff added successfully!';
+      okEl.classList.add('show');
+      resetStaffForm();
+      await refreshStaffList();
+    } else {
+      errEl.textContent = '❌ ' + (data.error || 'Failed. Try again.');
+      errEl.classList.add('show');
+    }
+  } catch(e) {
+    hideLoader();
+    errEl.textContent = '❌ Connection error. Try again.';
+    errEl.classList.add('show');
+  }
+}
+
+async function toggleStaffStatus(row, newStatus, name) {
+  const label = newStatus === 'Inactive' ? 'deactivate' : 'reactivate';
+  if (!confirm(`${label.charAt(0).toUpperCase()+label.slice(1)} ${name}?`)) return;
+  showLoader('Updating...');
+  try {
+    const data = JSON.parse(await (await fetch(API, {
+      method:'POST', headers:{'Content-Type':'text/plain'},
+      body:JSON.stringify({ action:'editStaff', row, name, status:newStatus })
+    })).text());
+    hideLoader();
+    if (data.success) await refreshStaffList();
+    else alert('❌ ' + (data.error || 'Failed.'));
+  } catch(e) { hideLoader(); alert('❌ Connection error.'); }
+}
+
+// ════════════════════════════════════════════════════════════════
+// CHANGE PIN FLOW
+// ════════════════════════════════════════════════════════════════
+let cpStep    = 1;   // 1=current, 2=new, 3=confirm
+let cpCurrent = '';  // current PIN entered
+let cpNew     = '';  // new PIN entered
+let cpConfirm = '';  // confirm PIN entered
+let cpBuffer  = '';  // active buffer
+
+function openChangePIN() {
+  cpStep = 1; cpCurrent = ''; cpNew = ''; cpConfirm = ''; cpBuffer = '';
+  document.getElementById('changePinOverlay').classList.add('show');
+  document.getElementById('cpStep1').classList.add('active');
+  document.getElementById('cpStep2').classList.remove('active');
+  document.getElementById('cpStep3').classList.remove('active');
+  document.getElementById('cpError').classList.remove('show');
+  document.getElementById('cpSuccess').classList.remove('show');
+  document.getElementById('cpSubtitle').textContent = currentUser.name + ' — Change your PIN';
+  updateCpDots();
+}
+
+function closeChangePIN() {
+  document.getElementById('changePinOverlay').classList.remove('show');
+  cpBuffer = ''; cpStep = 1;
+}
+
+function cpKey(d) {
+  if (cpBuffer.length >= 4) return;
+  cpBuffer += d;
+  updateCpDots();
+  if (cpBuffer.length === 4) setTimeout(cpNext, 200);
+}
+
+function cpDel() {
+  cpBuffer = cpBuffer.slice(0, -1);
+  updateCpDots();
+  document.getElementById('cpError').classList.remove('show');
+}
+
+function updateCpDots() {
+  const prefixes = { 1: 'cp', 2: 'cn', 3: 'cc' };
+  const prefix   = prefixes[cpStep] || 'cp';
+  for (let i = 0; i < 4; i++) {
+    const dot = document.getElementById(prefix + i);
+    if (dot) dot.classList.toggle('filled', i < cpBuffer.length);
+  }
+}
+
+async function cpNext() {
+  const errEl = document.getElementById('cpError');
+  errEl.classList.remove('show');
+
+  if (cpStep === 1) {
+    // Verify current PIN
+    showLoader('Verifying current PIN...');
+    try {
+      const data = JSON.parse(await (await fetch(`${API}?action=verifyPin&pin=${encodeURIComponent(cpBuffer)}&name=${encodeURIComponent(currentUser.name)}`)).text());
+      hideLoader();
+      if (data.success && data.authenticated) {
+        cpCurrent = cpBuffer;
+        cpBuffer  = '';
+        cpStep    = 2;
+        document.getElementById('cpStep1').classList.remove('active');
+        document.getElementById('cpStep2').classList.add('active');
+        updateCpDots();
+      } else {
+        cpBuffer = ''; updateCpDots();
+        errEl.textContent = '❌ Wrong current PIN. Try again.';
+        errEl.classList.add('show');
+      }
+    } catch(e) {
+      hideLoader(); cpBuffer = ''; updateCpDots();
+      errEl.textContent = '❌ Connection error. Try again.';
+      errEl.classList.add('show');
+    }
+
+  } else if (cpStep === 2) {
+    // Store new PIN
+    if (cpBuffer === cpCurrent) {
+      cpBuffer = ''; updateCpDots();
+      errEl.textContent = '❌ New PIN cannot be same as current PIN.';
+      errEl.classList.add('show');
+      return;
+    }
+    cpNew    = cpBuffer;
+    cpBuffer = '';
+    cpStep   = 3;
+    document.getElementById('cpStep2').classList.remove('active');
+    document.getElementById('cpStep3').classList.add('active');
+    updateCpDots();
+
+  } else if (cpStep === 3) {
+    // Confirm and save
+    cpConfirm = cpBuffer;
+    if (cpConfirm !== cpNew) {
+      cpBuffer = ''; updateCpDots();
+      errEl.textContent = '❌ PINs do not match. Please re-enter new PIN.';
+      errEl.classList.add('show');
+      // Go back to step 2
+      setTimeout(() => {
+        cpStep = 2; cpNew = ''; cpBuffer = '';
+        document.getElementById('cpStep3').classList.remove('active');
+        document.getElementById('cpStep2').classList.add('active');
+        errEl.classList.remove('show');
+        updateCpDots();
+      }, 1500);
+      return;
+    }
+
+    // Save to sheet
+    showLoader('Updating PIN...');
+    try {
+      const data = JSON.parse(await (await fetch(API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({
+          action:   'changePin',
+          name:     currentUser.name,
+          oldPin:   cpCurrent,
+          newPin:   cpNew
+        })
+      })).text());
+      hideLoader();
+      if (data.success) {
+        document.getElementById('cpStep3').classList.remove('active');
+        document.getElementById('cpSuccess').textContent = '✅ PIN changed successfully!';
+        document.getElementById('cpSuccess').classList.add('show');
+        setTimeout(() => closeChangePIN(), 2000);
+      } else {
+        cpBuffer = ''; updateCpDots();
+        errEl.textContent = '❌ ' + (data.error || 'Failed to update PIN.');
+        errEl.classList.add('show');
+      }
+    } catch(e) {
+      hideLoader(); cpBuffer = ''; updateCpDots();
+      errEl.textContent = '❌ Connection error. Try again.';
+      errEl.classList.add('show');
+    }
+  }
+}
+
+
+// ════════════════════════════════════════════════════════════════
+// OFFLINE QUEUE SYSTEM
+// ════════════════════════════════════════════════════════════════
+let offlineQueue = JSON.parse(localStorage.getItem('pt_offline_queue') || '[]');
+
+function isOnline() { return navigator.onLine; }
+
+function updateOnlineStatus() {
+  const banner = document.getElementById('offlineBanner');
+  const badge  = document.getElementById('syncBadge');
+  if (!isOnline()) {
+    banner.classList.add('show');
+    banner.style.top = document.getElementById('mainHeader').style.display !== 'none' ? '0' : '0';
+  } else {
+    banner.classList.remove('show');
+    if (offlineQueue.length > 0) syncOfflineQueue();
+  }
+  badge.textContent = offlineQueue.length + ' pending';
+  badge.classList.toggle('show', offlineQueue.length > 0);
+}
+
+window.addEventListener('online',  updateOnlineStatus);
+window.addEventListener('offline', updateOnlineStatus);
+
+async function postAPIWithQueue(payload) {
+  if (!isOnline()) {
+    offlineQueue.push({ payload, timestamp: new Date().toISOString() });
+    localStorage.setItem('pt_offline_queue', JSON.stringify(offlineQueue));
+    updateOnlineStatus();
+    return { success: true, queued: true };
+  }
+  return await postAPI(payload);
+}
+
+async function syncOfflineQueue() {
+  if (!offlineQueue.length) return;
+  const pending = [...offlineQueue];
+  offlineQueue = [];
+  localStorage.setItem('pt_offline_queue', JSON.stringify(offlineQueue));
+  updateOnlineStatus();
+  for (const item of pending) {
+    try { await postAPI(item.payload); }
+    catch(e) { offlineQueue.push(item); }
+  }
+  localStorage.setItem('pt_offline_queue', JSON.stringify(offlineQueue));
+  updateOnlineStatus();
+}
+
+// ════════════════════════════════════════════════════════════════
+// PUSH NOTIFICATION — 30 min In Transit alert
+// ════════════════════════════════════════════════════════════════
+let transitAlertTimer = null;
+
+async function requestNotificationPermission() {
+  if ('Notification' in window && Notification.permission === 'default') {
+    await Notification.requestPermission();
+  }
+}
+
+function sendTransitNotification(model, chassis, from, to) {
+  if ('Notification' in window && Notification.permission === 'granted') {
+    new Notification('Planet Toyota — Transit Alert', {
+      body: model + ' (' + chassis + ') dispatched from ' + from + ' to ' + to + ' — 30 mins elapsed. Not yet received.',
+      icon: ''
+    });
+  }
+}
+
+function scheduleTransitAlert(model, chassis, from, to) {
+  if (transitAlertTimer) clearTimeout(transitAlertTimer);
+  transitAlertTimer = setTimeout(function() {
+    sendTransitNotification(model, chassis, from, to);
+  }, 30 * 60 * 1000); // 30 minutes
+}
+
+// ════════════════════════════════════════════════════════════════
+// CHASSIS FORMAT VALIDATION
+// ════════════════════════════════════════════════════════════════
+function validateChassisFormat(inputId, errId) {
+  const val    = document.getElementById(inputId).value.trim();
+  const errEl  = document.getElementById(errId);
+  if (!val) { if(errEl) errEl.textContent = ''; return true; }
+  const valid  = /^[A-Z0-9]{5,17}$/.test(val);
+  const isTKM  = /^MA3[A-Z0-9]{14}$/.test(val);
+  if (!valid) {
+    if(errEl) errEl.textContent = 'Invalid format — use alphanumeric characters only';
+    return false;
+  }
+  if (val.length === 17 && !isTKM) {
+    if(errEl) errEl.textContent = 'Note: TKM chassis numbers start with MA3';
+    return true; // warning only, not blocking
+  }
+  if(errEl) errEl.textContent = '';
+  return true;
+}
+
+// ════════════════════════════════════════════════════════════════
+// GATE ENTRY — NEW TKM ARRIVAL
+// ════════════════════════════════════════════════════════════════
+function openGateEntry() {
+  document.getElementById('gateEntryOverlay').classList.add('show');
+  document.getElementById('geChassis').value  = '';
+  document.getElementById('geDriver').value   = '';
+  document.getElementById('geRemarks').value  = '';
+  document.getElementById('geSuffix').value   = '';
+  document.getElementById('geDispatch').value = new Date().toISOString().split('T')[0];
+  document.getElementById('geChassisErr').textContent = '';
+  document.getElementById('geError').innerHTML = '';
+  // Populate model dropdown from suffixes
+  const geModel = document.getElementById('geModel');
+  const models  = [...new Set(suffixes.map(r => r.model))].sort();
+  geModel.innerHTML = '<option value="">— Select Model —</option>' + models.map(m => '<option>' + m + '</option>').join('');
+}
+
+function closeGateEntry() { document.getElementById('gateEntryOverlay').classList.remove('show'); }
+function startScanForGate() { scanMode = 'gate'; initScanner(); }
+
+function geDDVariant() {
+  const m = document.getElementById('geModel').value;
+  const opts = [...new Set(suffixes.filter(r => r.model===m).map(r => r.variant))].sort();
+  setOpts('geVariant', opts, '— Select Variant —');
+  setOpts('geFuel',    [],   '— Select Fuel Type —');
+  setOpts('geColour',  [],   '— Select Colour —');
+  setOpts('geInterior',[],   '— Select Interior —');
+  document.getElementById('geSuffix').value = '';
+}
+function geDDFuel() {
+  const m = document.getElementById('geModel').value, v = document.getElementById('geVariant').value;
+  const opts = [...new Set(suffixes.filter(r => r.model===m && r.variant===v).map(r => r.fuel))].sort();
+  setOpts('geFuel', opts, '— Select Fuel Type —');
+  setOpts('geColour',  [], '— Select Colour —');
+  setOpts('geInterior',[], '— Select Interior —');
+  document.getElementById('geSuffix').value = '';
+}
+function geDDColour() {
+  const m = document.getElementById('geModel').value, v = document.getElementById('geVariant').value, f = document.getElementById('geFuel').value;
+  const opts = [...new Set(suffixes.filter(r => r.model===m && r.variant===v && r.fuel===f).map(r => r.colour))].sort();
+  setOpts('geColour', opts, '— Select Colour —');
+  setOpts('geInterior',[], '— Select Interior —');
+  document.getElementById('geSuffix').value = '';
+}
+function geDDInterior() {
+  const m = document.getElementById('geModel').value, v = document.getElementById('geVariant').value;
+  const f = document.getElementById('geFuel').value,  c = document.getElementById('geColour').value;
+  const matches = suffixes.filter(r => r.model===m && r.variant===v && r.fuel===f && r.colour===c);
+  const opts = [...new Set(matches.map(r => r.interior || '(None)'))].sort();
+  setOpts('geInterior', opts, '— Select Interior —');
+  document.getElementById('geSuffix').value = '';
+}
+function geDDSuffix() {
+  const m = document.getElementById('geModel').value, v = document.getElementById('geVariant').value;
+  const f = document.getElementById('geFuel').value,  c = document.getElementById('geColour').value;
+  const i = document.getElementById('geInterior').value;
+  const match = suffixes.find(r => r.model===m && r.variant===v && r.fuel===f && r.colour===c &&
+    (r.interior===i || (!r.interior && i==='(None)')));
+  const inp = document.getElementById('geSuffix');
+  inp.value = match ? match.suffix : '— Not found —';
+  inp.style.borderColor = match ? 'var(--green)' : 'var(--red)';
+}
+
+async function confirmGateEntry() {
+  const chassis  = document.getElementById('geChassis').value.trim().toUpperCase();
+  const model    = document.getElementById('geModel').value;
+  const variant  = document.getElementById('geVariant').value;
+  const fuel     = document.getElementById('geFuel').value;
+  const colour   = document.getElementById('geColour').value;
+  const interior = document.getElementById('geInterior').value;
+  const suffix   = document.getElementById('geSuffix').value;
+  const dispatch = document.getElementById('geDispatch').value;
+  const driver   = document.getElementById('geDriver').value.trim();
+  const remarks  = document.getElementById('geRemarks').value.trim();
+
+  if (!chassis) { showErr('geError','⚠️ Chassis number is required.'); return; }
+  if (!validateChassisFormat('geChassis','geChassisErr')) { showErr('geError','⚠️ Invalid chassis format.'); return; }
+  if (!model || !variant || !fuel || !colour || !interior) { showErr('geError','⚠️ Please fill all vehicle specification fields.'); return; }
+  if (!driver) { showErr('geError','⚠️ Driver name is required.'); return; }
+
+  closeGateEntry();
+  showLoader('Registering new arrival...');
+  try {
+    const res = await postAPIWithQueue({
+      action: 'addNewVehicle', chassis, model, variant, fuel, colour, interior, suffix,
+      dispatch, receivedBy: currentUser ? currentUser.name : '',
+      driverName: driver, remarks,
+      location: 'Stockyard', status: 'In Stock',
+      arrival: new Date().toISOString().split('T')[0],
+      timestamp: new Date().toISOString(),
+      gateEntry: true
+    });
+    // Log movement for gate entry
+    await postAPIWithQueue({
+      action: 'logMovement', chassis, model, variant, fuel, suffix,
+      from: 'TKM', to: 'Stockyard',
+      staff: currentUser ? currentUser.name : '',
+      role: currentUser ? currentUser.role : '',
+      driverName: driver, remarks: 'Gate Entry — New TKM Arrival. Driver: ' + driver,
+      via: 'PWA — Gate Entry', timestamp: new Date().toISOString()
+    });
+    hideLoader();
+    // Update shift stats
+    shiftStats.arrivals++;
+    shiftMovements.push({ time: new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}), model: model + ' ' + variant, chassis, from:'TKM', to:'Stockyard', action:'New Arrival' });
+    showSuccess('🚛','Vehicle Registered!','New arrival logged with gate entry timestamp.',[
+      { k:'Chassis',  v: chassis },
+      { k:'Model',    v: model + ' ' + variant },
+      { k:'Suffix',   v: suffix },
+      { k:'Location', v: 'Stockyard' },
+      { k:'Driver',   v: driver },
+      { k:'Logged By',v: currentUser ? currentUser.name : '' },
+      { k:'Gate Entry',v: new Date().toLocaleString('en-IN',{hour:'2-digit',minute:'2-digit',day:'2-digit',month:'short'}) },
+    ]);
+  } catch(e) { hideLoader(); showErr('geError','❌ Failed. Try again.'); }
+}
+
+// ════════════════════════════════════════════════════════════════
+// MARK AS SOLD
+// ════════════════════════════════════════════════════════════════
+function openSoldModal() {
+  if (!vehicle) return;
+  document.getElementById('soldModel').textContent   = vehicle.model + ' ' + vehicle.variant;
+  document.getElementById('soldChassis').textContent = vehicle.chassis;
+  document.getElementById('soldBy').value            = currentUser ? currentUser.name : '';
+  document.getElementById('soldBookingRef').value    = '';
+  document.getElementById('soldRemarks').value       = '';
+  document.getElementById('soldError').innerHTML     = '';
+  document.getElementById('soldOverlay').classList.add('show');
+}
+function closeSoldModal() { document.getElementById('soldOverlay').classList.remove('show'); }
+
+async function confirmSold() {
+  const bookingRef = document.getElementById('soldBookingRef').value.trim();
+  const soldBy     = currentUser ? currentUser.name : '';
+  const remarks    = document.getElementById('soldRemarks').value.trim();
+  if (!bookingRef) { showErr('soldError','⚠️ Booking ref or customer name required.'); return; }
+  closeSoldModal();
+  showLoader('Updating status...');
+  try {
+    await postAPIWithQueue({
+      action: 'markAsSold', chassis: vehicle.chassis,
+      model: vehicle.model, variant: vehicle.variant,
+      bookingRef, soldBy, remarks,
+      timestamp: new Date().toISOString()
+    });
+    hideLoader();
+    shiftStats.movements++;
+    showSuccess('⚑','Marked as Sold','Vehicle status updated to Sold — Not Delivered.',[
+      { k:'Vehicle',     v: vehicle.model + ' ' + vehicle.variant },
+      { k:'Chassis',     v: vehicle.chassis },
+      { k:'Booking Ref', v: bookingRef },
+      { k:'By',          v: soldBy },
+    ]);
+  } catch(e) { hideLoader(); alert('❌ Failed. Try again.'); }
+}
+
+// ════════════════════════════════════════════════════════════════
+// SHIFT SUMMARY
+// ════════════════════════════════════════════════════════════════
+let shiftStats = { movements: 0, dispatched: 0, received: 0, arrivals: 0, deliveries: 0 };
+let shiftMovements = [];
+
+function openShiftSummary() {
+  document.getElementById('shiftOverlay').classList.add('show');
+  document.getElementById('shiftDate').textContent = 'Your activity today — ' + new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long'});
+  document.getElementById('shiftMovements').textContent  = shiftStats.movements;
+  document.getElementById('shiftDispatched').textContent = shiftStats.dispatched;
+  document.getElementById('shiftReceived').textContent   = shiftStats.received;
+  document.getElementById('shiftArrivals').textContent   = shiftStats.arrivals;
+  document.getElementById('shiftDeliveries').textContent = shiftStats.deliveries;
+  const detEl = document.getElementById('shiftDetail');
+  if (!shiftMovements.length) {
+    detEl.innerHTML = '<div class="empty-state" style="padding:20px"><div class="e-text">No movements logged this session</div></div>';
+    return;
+  }
+  detEl.innerHTML = shiftMovements.map(m =>
+    '<div class="history-item" style="margin-bottom:6px">' +
+      '<div class="hi-model">' + m.model + '</div>' +
+      '<div class="hi-move">' + (m.from||'—') + ' → ' + m.to + '</div>' +
+      '<div class="hi-time">' + m.time + (m.driver ? ' | Driver: ' + m.driver : '') + '</div>' +
+    '</div>'
+  ).join('');
+}
+function closeShiftSummary() { document.getElementById('shiftOverlay').classList.remove('show'); }
+
+// ── LOCATION DRILL-DOWN ──────────────────────────────────────────
+function openLocDrill(loc) {
+  const canMove = canMoveVehicle();
+  const icons   = { ALL:'📦', Stockyard:'🅿️', Workshop:'🔧', Showroom:'🏢', 'In Transit':'🚚' };
+  document.getElementById('locDrillOverlay').classList.add('show');
+
+  // Filter stock
+  let items = allStock;
+  if (loc !== 'ALL') {
+    items = allStock.filter(v =>
+      loc === 'In Transit' ? v.status === 'In Transit' : v.location === loc
+    );
+  }
+
+  document.getElementById('locDrillTitle').textContent = (icons[loc] || '') + ' ' + (loc === 'ALL' ? 'All Stock' : loc);
+  document.getElementById('locDrillSub').textContent   = `${items.length} vehicle${items.length !== 1 ? 's' : ''}`;
+
+  if (!items.length) {
+    document.getElementById('locDrillBody').innerHTML =
+      '<div class="empty-state"><div class="e-icon">🚗</div><div class="e-text">No vehicles here</div></div>';
+    return;
+  }
+
+  document.getElementById('locDrillBody').innerHTML = items.map(v => {
+    const locLabel = v.status === 'In Transit' ? 'In Transit' : (v.location || '—');
+    const daysColor = parseInt(v.days) >= 45 ? 'var(--red)' : parseInt(v.days) >= 30 ? 'var(--transit)' : '#aaa';
+    const moveBtn = canMove
+      ? `<button class="move-btn" onclick="moveFromDrill('${v.chassis}')">🚗 Move</button>`
+      : '';
+    return `<div class="vli">
+      <div class="vli-info">
+        <div class="vli-model">${v.model} <span style="color:var(--red);font-size:11px">${v.suffix || ''}</span></div>
+        <div class="vli-variant">${v.variant}</div>
+        <div class="vli-chassis">${v.chassis}</div>
+        <div class="vli-tags">
+          <span class="vli-tag">${v.colour || '—'}</span>
+          <span class="vli-tag">${v.fuel || '—'}</span>
+          ${loc === 'ALL' ? `<span class="vli-tag">${locLabel}</span>` : ''}
+          ${v.days ? `<span class="vli-tag" style="color:${daysColor};font-weight:800">${v.days}d</span>` : ''}
+        </div>
+      </div>
+      ${moveBtn}
+    </div>`;
+  }).join('');
+}
+
+function closeLocDrill() {
+  document.getElementById('locDrillOverlay').classList.remove('show');
+}
+
+async function moveFromDrill(chassis) {
+  closeLocDrill();
+  // Load full vehicle and open vehicle screen
+  showLoader('Loading vehicle...');
+  try {
+    const data = JSON.parse(await (await fetch(`${API}?action=lookupChassis&chassis=${encodeURIComponent(chassis)}`)).text());
+    hideLoader();
+    if (!data.success || !data.vehicle) { alert('❌ Could not load vehicle. Try again.'); return; }
+    vehicle = data.vehicle;
+    // Switch to log tab context then show vehicle screen
+    activeTab = 'log';
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('navLog').classList.add('active');
+    document.getElementById('headerSub').textContent = 'Log Movement';
+    showVehicle(vehicle);
+  } catch(e) {
+    hideLoader();
+    alert('❌ Connection error. Try again.');
+  }
+}
+
+// ── MOVE FROM STOCK SEARCH ────────────────────────────────────────
+async function moveFromStock(chassis, event) {
+  event.stopPropagation(); // prevent chassis detail opening
+  await moveFromDrill(chassis);
+}
+
+document.getElementById('modalDelivery').addEventListener('click', function(e) { if(e.target===this) closeDelivery(); });
+document.getElementById('chassisDetailOverlay').addEventListener('click', function(e) { if(e.target===this) closeChassisDetail(); });
+document.getElementById('locDrillOverlay').addEventListener('click', function(e) { if(e.target===this) closeLocDrill(); });
+document.getElementById('profileMenuOverlay').addEventListener('click', function(e) { if(e.target===this) closeProfileMenu(); });
+document.getElementById('staffPanelOverlay').addEventListener('click', function(e) { if(e.target===this) closeStaffPanel(); });
+document.getElementById('soldOverlay').addEventListener('click', function(e) { if(e.target===this) closeSoldModal(); });
+document.getElementById('shiftOverlay').addEventListener('click', function(e) { if(e.target===this) closeShiftSummary(); });
+
+// ════════════════════════════════════════════════════════════════
+// ALLOCATION SYSTEM
+// ════════════════════════════════════════════════════════════════
+function showVehicleAllocation(v) {
+  const card = document.getElementById('allocCard');
+  const disp = document.getElementById('allocStatusDisplay');
+  const btn  = document.getElementById('allocBtn');
+  if (!card || !disp || !btn) return;
+  if (!canSeeAllocation()) { card.style.display='none'; return; }
+  card.style.display = 'block';
+  const sv = allStock ? allStock.find(x => x.chassis === v.chassis) : null;
+  if (sv) { v.allocatedTo=sv.allocatedTo||''; v.allocBookingRef=sv.allocBookingRef||''; v.allocDeliveryDate=sv.allocDeliveryDate||''; }
+  if (v.allocatedTo && v.allocatedTo.trim()) {
+    disp.innerHTML =
+      '<div class="alloc-badge">' +
+        '<div><div style="font-size:10px;color:#92400E;opacity:0.7;text-transform:uppercase">Allocated To</div>' +
+        '<div style="font-size:16px;font-weight:800;color:#92400E;margin-top:2px">' + v.allocatedTo + '</div>' +
+        (v.allocBookingRef ? '<div style="font-size:11px;color:#92400E;margin-top:3px">Ref: ' + v.allocBookingRef + '</div>' : '') +
+        (v.allocDeliveryDate ? '<div style="font-size:11px;color:#92400E;margin-top:2px">Expected: ' + v.allocDeliveryDate + '</div>' : '') +
+        '</div>' + (canAllocate() ? '<button class="dealloc-btn" onclick="confirmDeallocation()">Remove</button>' : '') +
+      '</div>';
+    btn.textContent='Update Allocation'; btn.style.display=canAllocate()?'flex':'none';
+  } else {
+    disp.innerHTML='<div style="display:flex;align-items:center;gap:8px;padding:6px 0">'+
+      '<span class="loc-pill pill-available" style="font-size:11px;padding:4px 12px">Available</span>'+
+      '<span style="font-size:12px;color:#9CA3AF">Not allocated to any customer</span></div>';
+    btn.textContent='Allocate to Customer'; btn.style.display=canAllocate()?'flex':'none';
+  }
+}
+function openAllocModal() {
+  if (!vehicle) return;
+  document.getElementById('allocOverlay').classList.add('show');
+  document.getElementById('allocTitle').textContent=vehicle.allocatedTo?'Update Allocation':'Allocate Vehicle';
+  document.getElementById('allocVehicleModel').textContent=vehicle.model+' '+vehicle.variant;
+  document.getElementById('allocVehicleVariant').textContent=(vehicle.colour||'')+' | '+(vehicle.suffix||'');
+  document.getElementById('allocVehicleChassis').textContent=vehicle.chassis;
+  document.getElementById('allocCustomerName').value=vehicle.allocatedTo||'';
+  document.getElementById('allocBookingRef').value=vehicle.allocBookingRef||'';
+  document.getElementById('allocDeliveryDate').value=vehicle.allocDeliveryDate||'';
+  document.getElementById('allocRemarks').value='';
+  document.getElementById('allocError').innerHTML='';
+  document.getElementById('allocDeliveryDate').min=new Date().toISOString().split('T')[0];
+}
+function closeAllocModal(){document.getElementById('allocOverlay').classList.remove('show');}
+async function confirmAllocation(){
+  const cn=document.getElementById('allocCustomerName').value.trim();
+  const br=document.getElementById('allocBookingRef').value.trim();
+  const dd=document.getElementById('allocDeliveryDate').value;
+  if(!cn){showErr('allocError','Customer name required.');return;}
+  if(!dd){showErr('allocError','Expected delivery date required.');return;}
+  clearErr('allocError'); closeAllocModal(); showLoader('Allocating...');
+  try {
+    await postAPIWithQueue({action:'allocateVehicle',chassis:vehicle.chassis,allocatedTo:cn,
+      allocBookingRef:br,allocDeliveryDate:dd,allocRemarks:document.getElementById('allocRemarks').value.trim(),
+      allocatedBy:currentUser?currentUser.name:'',timestamp:new Date().toISOString()});
+    vehicle.allocatedTo=cn; vehicle.allocBookingRef=br; vehicle.allocDeliveryDate=dd;
+    const i=allStock?allStock.findIndex(v=>v.chassis===vehicle.chassis):-1;
+    if(i>=0){allStock[i].allocatedTo=cn;allStock[i].allocBookingRef=br;allStock[i].allocDeliveryDate=dd;}
+    hideLoader(); showVehicleAllocation(vehicle);
+  } catch(e){hideLoader();alert('Allocation failed.');}
+}
+async function confirmDeallocation(){
+  if(!vehicle||!confirm('Remove allocation for '+vehicle.model+'?'))return;
+  showLoader('Removing...');
+  try {
+    await postAPIWithQueue({action:'deallocateVehicle',chassis:vehicle.chassis,
+      deallocBy:currentUser?currentUser.name:'',timestamp:new Date().toISOString()});
+    vehicle.allocatedTo=''; vehicle.allocBookingRef=''; vehicle.allocDeliveryDate='';
+    const i=allStock?allStock.findIndex(v=>v.chassis===vehicle.chassis):-1;
+    if(i>=0){allStock[i].allocatedTo='';allStock[i].allocBookingRef='';allStock[i].allocDeliveryDate='';}
+    hideLoader(); showVehicleAllocation(vehicle);
+  } catch(e){hideLoader();alert('De-allocation failed.');}
+}
+
+// ════════════════════════════════════════════════════════════════
+// TKM BILLED
+// ════════════════════════════════════════════════════════════════
+function openTKMBilledSheet(){
+  document.getElementById('tkmBilledOverlay').classList.add('show');
+  const tkmV=allStock?allStock.filter(v=>v.status==='TKM Billed'):[];
+  const el=document.getElementById('tkmBilledList');
+  if(!tkmV.length){el.innerHTML='<div class="empty-state"><div class="e-icon">✅</div><div class="e-text">No pending TKM vehicles</div></div>';return;}
+  el.innerHTML=tkmV.map(v=>'<div class="tkm-item"><div class="tkm-item-model">'+v.model+' '+v.variant+(v.suffix?' <span style="color:#7C3AED;font-size:11px">'+v.suffix+'</span>':'')+'</div><div class="tkm-item-detail">'+(v.colour||'')+(v.fuel?' | '+v.fuel:'')+'</div><div class="tkm-item-chassis">'+v.chassis+'</div><div class="tkm-item-days">Billed '+(v.days||0)+' days ago</div></div>').join('');
+}
+function closeTKMBilledSheet(){document.getElementById('tkmBilledOverlay').classList.remove('show');}
+
+function openTKMBilledEntry(){
+  if(!canEnterTKMBilled())return;
+  document.getElementById('tkmBilledEntryOverlay').classList.add('show');
+  document.getElementById('tbChassis').value='';
+  document.getElementById('tbInvoiceNo').value='';
+  document.getElementById('tbBillingDate').value=new Date().toISOString().split('T')[0];
+  document.getElementById('tbError').innerHTML='';
+  const models=[...new Set(suffixes.map(r=>r.model))].sort();
+  document.getElementById('tbModel').innerHTML='<option value="">— Select Model —</option>'+models.map(m=>'<option>'+m+'</option>').join('');
+  ['tbVariant','tbFuel','tbColour','tbInterior'].forEach(id=>{const e=document.getElementById(id);if(e)e.innerHTML='<option value="">—</option>';});
+  document.getElementById('tbSuffix').value='';
+}
+function closeTKMBilledEntry(){document.getElementById('tkmBilledEntryOverlay').classList.remove('show');}
+function tbDD(next){
+  const m=document.getElementById('tbModel').value;
+  const v=document.getElementById('tbVariant')?document.getElementById('tbVariant').value:'';
+  const f=document.getElementById('tbFuel')?document.getElementById('tbFuel').value:'';
+  const c=document.getElementById('tbColour')?document.getElementById('tbColour').value:'';
+  if(next==='Suffix'){
+    const i=document.getElementById('tbInterior').value;
+    const match=suffixes.find(r=>r.model===m&&r.variant===v&&r.fuel===f&&r.colour===c&&(r.interior===i||(!r.interior&&i==='(None)')));
+    const inp=document.getElementById('tbSuffix');
+    inp.value=match?match.suffix:'— Not found —'; inp.style.borderColor=match?'var(--green)':'var(--red)'; return;
+  }
+  const filters={Variant:r=>r.model===m, Fuel:r=>r.model===m&&r.variant===v, Colour:r=>r.model===m&&r.variant===v&&r.fuel===f, Interior:r=>r.model===m&&r.variant===v&&r.fuel===f&&r.colour===c};
+  const key=next.toLowerCase();
+  const opts=[...new Set(suffixes.filter(filters[next]).map(r=>r[key]||'(None)'))].sort();
+  const el=document.getElementById('tb'+next);
+  if(el) el.innerHTML='<option value="">— '+next+' —</option>'+opts.map(o=>'<option>'+o+'</option>').join('');
+  document.getElementById('tbSuffix').value='';
+}
+async function confirmTKMBilledEntry(){
+  const chassis=document.getElementById('tbChassis').value.trim().toUpperCase();
+  const model=document.getElementById('tbModel').value,variant=document.getElementById('tbVariant').value;
+  const fuel=document.getElementById('tbFuel').value,colour=document.getElementById('tbColour').value;
+  const interior=document.getElementById('tbInterior').value,suffix=document.getElementById('tbSuffix').value;
+  const billingDate=document.getElementById('tbBillingDate').value,invoiceNo=document.getElementById('tbInvoiceNo').value.trim();
+  if(!chassis){showErr('tbError','Chassis required.');return;}
+  if(!model||!variant||!fuel||!colour||!interior){showErr('tbError','Fill all fields.');return;}
+  if(!billingDate){showErr('tbError','Billing date required.');return;}
+  closeTKMBilledEntry(); showLoader('Registering...');
+  try{
+    await postAPIWithQueue({action:'addTKMBilled',chassis,model,variant,fuel,colour,interior,suffix,billingDate,invoiceNo,billedBy:currentUser?currentUser.name:'',timestamp:new Date().toISOString()});
+    hideLoader();
+    showSuccess('📋','TKM Billed Registered','Vehicle added to pending list.',[
+      {k:'Chassis',v:chassis},{k:'Model',v:model+' '+variant},{k:'Colour',v:colour},{k:'Invoice',v:invoiceNo||'—'}]);
+  }catch(e){hideLoader();alert('Failed.');}
+}
+
+</script>
+
+
+
+<!-- ══ PROFILE MENU ══ -->
+<div class="modal-overlay" id="profileMenuOverlay">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="profileMenuName">Profile</div>
+    <div style="margin-bottom:16px">
+      <div style="font-size:12px;color:#888" id="profileMenuRole"></div>
+    </div>
+    <button class="btn btn-outline" style="margin-bottom:10px" onclick="closeProfileMenu();openChangePIN()">🔑 Change My PIN</button>
+    <button class="btn btn-blue" style="margin-bottom:10px" onclick="closeProfileMenu();openShiftSummary()">📋 My Shift Summary</button>
+    <button class="btn btn-dark" id="staffMgmtBtn" style="margin-bottom:10px;display:none" onclick="closeProfileMenu();openStaffPanel()">👥 Manage Staff</button>
+    <button class="btn btn-gray" onclick="closeProfileMenu()">Close</button>
+  </div>
+</div>
+
+<!-- ══ STAFF MANAGEMENT PANEL ══ -->
+<div class="staff-panel-overlay" id="staffPanelOverlay">
+  <div class="staff-panel">
+    <div class="staff-panel-header">
+      <div>
+        <div class="staff-panel-title">👥 Staff Management</div>
+        <div style="font-size:11px;color:#888;margin-top:2px">Add, edit or deactivate staff</div>
+      </div>
+      <button class="staff-panel-close" onclick="closeStaffPanel()">✕</button>
+    </div>
+    <div class="staff-panel-body">
+
+      <!-- ADD / EDIT FORM -->
+      <div class="staff-form" id="staffForm">
+        <h3 id="staffFormTitle">➕ Add New Staff</h3>
+        <input class="sf-input" id="sfName"  type="text" placeholder="Full Name *">
+        <select class="sf-select" id="sfRole">
+          <option value="">— Select Role —</option>
+          <option value="Owner">Owner</option>
+          <option value="Manager">Manager</option>
+          <option value="Yard Staff">Yard Staff</option>
+        </select>
+        <input class="sf-input" id="sfPin" type="number" placeholder="4-digit PIN *" maxlength="4"
+          oninput="if(this.value.length>4)this.value=this.value.slice(0,4)">
+        <input class="sf-input" id="sfPinConfirm" type="number" placeholder="Confirm PIN *" maxlength="4"
+          oninput="if(this.value.length>4)this.value=this.value.slice(0,4)" style="display:none" id="sfPinConfirm">
+        <div class="sf-err" id="sfErr"></div>
+        <div class="sf-ok"  id="sfOk"></div>
+        <input type="hidden" id="sfEditRow" value="">
+        <div class="sf-row">
+          <button class="btn btn-green" style="flex:2" onclick="saveStaff()">✅ Save</button>
+          <button class="btn btn-gray"  style="flex:1" onclick="resetStaffForm()">Clear</button>
+        </div>
+      </div>
+
+      <!-- STAFF LIST -->
+      <div style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:10px">
+        Current Staff
+      </div>
+      <div id="staffList">
+        <div class="empty-state"><div class="e-icon">🔄</div><div class="e-text">Loading...</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ CHANGE PIN MODAL ══ -->
+<div class="change-pin-overlay" id="changePinOverlay">
+  <div class="change-pin-box">
+    <h2>🔑 Change PIN</h2>
+    <p id="cpSubtitle">Verify your identity then set a new PIN</p>
+
+    <div class="cp-error"   id="cpError"></div>
+    <div class="cp-success" id="cpSuccess"></div>
+
+    <!-- Step 1: Current PIN -->
+    <div class="pin-step active" id="cpStep1">
+      <div class="pin-step-label">Step 1 — Enter Current PIN</div>
+      <div class="cp-dots">
+        <div class="cp-dot" id="cp0"></div>
+        <div class="cp-dot" id="cp1"></div>
+        <div class="cp-dot" id="cp2"></div>
+        <div class="cp-dot" id="cp3"></div>
+      </div>
+      <div class="cp-numpad">
+        <button class="cp-num-btn" onclick="cpKey('1')">1</button>
+        <button class="cp-num-btn" onclick="cpKey('2')">2</button>
+        <button class="cp-num-btn" onclick="cpKey('3')">3</button>
+        <button class="cp-num-btn" onclick="cpKey('4')">4</button>
+        <button class="cp-num-btn" onclick="cpKey('5')">5</button>
+        <button class="cp-num-btn" onclick="cpKey('6')">6</button>
+        <button class="cp-num-btn" onclick="cpKey('7')">7</button>
+        <button class="cp-num-btn" onclick="cpKey('8')">8</button>
+        <button class="cp-num-btn" onclick="cpKey('9')">9</button>
+        <button class="cp-num-btn empty"></button>
+        <button class="cp-num-btn" onclick="cpKey('0')">0</button>
+        <button class="cp-num-btn del" onclick="cpDel()">⌫</button>
+      </div>
+    </div>
+
+    <!-- Step 2: New PIN -->
+    <div class="pin-step" id="cpStep2">
+      <div class="pin-step-label">Step 2 — Enter New PIN</div>
+      <div class="cp-dots">
+        <div class="cp-dot" id="cn0"></div>
+        <div class="cp-dot" id="cn1"></div>
+        <div class="cp-dot" id="cn2"></div>
+        <div class="cp-dot" id="cn3"></div>
+      </div>
+      <div class="cp-numpad">
+        <button class="cp-num-btn" onclick="cpKey('1')">1</button>
+        <button class="cp-num-btn" onclick="cpKey('2')">2</button>
+        <button class="cp-num-btn" onclick="cpKey('3')">3</button>
+        <button class="cp-num-btn" onclick="cpKey('4')">4</button>
+        <button class="cp-num-btn" onclick="cpKey('5')">5</button>
+        <button class="cp-num-btn" onclick="cpKey('6')">6</button>
+        <button class="cp-num-btn" onclick="cpKey('7')">7</button>
+        <button class="cp-num-btn" onclick="cpKey('8')">8</button>
+        <button class="cp-num-btn" onclick="cpKey('9')">9</button>
+        <button class="cp-num-btn empty"></button>
+        <button class="cp-num-btn" onclick="cpKey('0')">0</button>
+        <button class="cp-num-btn del" onclick="cpDel()">⌫</button>
+      </div>
+    </div>
+
+    <!-- Step 3: Confirm New PIN -->
+    <div class="pin-step" id="cpStep3">
+      <div class="pin-step-label">Step 3 — Confirm New PIN</div>
+      <div class="cp-dots">
+        <div class="cp-dot" id="cc0"></div>
+        <div class="cp-dot" id="cc1"></div>
+        <div class="cp-dot" id="cc2"></div>
+        <div class="cp-dot" id="cc3"></div>
+      </div>
+      <div class="cp-numpad">
+        <button class="cp-num-btn" onclick="cpKey('1')">1</button>
+        <button class="cp-num-btn" onclick="cpKey('2')">2</button>
+        <button class="cp-num-btn" onclick="cpKey('3')">3</button>
+        <button class="cp-num-btn" onclick="cpKey('4')">4</button>
+        <button class="cp-num-btn" onclick="cpKey('5')">5</button>
+        <button class="cp-num-btn" onclick="cpKey('6')">6</button>
+        <button class="cp-num-btn" onclick="cpKey('7')">7</button>
+        <button class="cp-num-btn" onclick="cpKey('8')">8</button>
+        <button class="cp-num-btn" onclick="cpKey('9')">9</button>
+        <button class="cp-num-btn empty"></button>
+        <button class="cp-num-btn" onclick="cpKey('0')">0</button>
+        <button class="cp-num-btn del" onclick="cpDel()">⌫</button>
+      </div>
+    </div>
+
+    <button class="cp-cancel-btn" onclick="closeChangePIN()">Cancel</button>
+  </div>
+</div>
+
+<!-- ══ LOCATION DRILL-DOWN MODAL ══ -->
+<div class="loc-drill-overlay" id="locDrillOverlay">
+  <div class="loc-drill-sheet" style="position:relative">
+    <div class="loc-drill-header">
+      <button class="loc-drill-close" onclick="closeLocDrill()">✕</button>
+      <div class="modal-handle" style="margin:0 auto 10px"></div>
+      <div class="loc-drill-title" id="locDrillTitle">Stockyard</div>
+      <div class="loc-drill-sub"   id="locDrillSub">0 vehicles</div>
+    </div>
+    <div class="loc-drill-body" id="locDrillBody">
+      <div class="empty-state"><div class="e-icon">🔄</div><div class="e-text">Loading...</div></div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══ ALLOCATION MODAL ══ -->
+<div class="modal-overlay" id="allocOverlay">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="allocTitle">Allocate Vehicle</div>
+    <div class="v-card" style="margin-bottom:14px">
+      <div class="v-model"   id="allocVehicleModel">—</div>
+      <div class="v-variant" id="allocVehicleVariant">—</div>
+      <div class="v-chassis" id="allocVehicleChassis">—</div>
+    </div>
+    <div class="input-group"><label class="input-label">Customer Name *</label><input class="input-field" id="allocCustomerName" type="text" placeholder="Full name"></div>
+    <div class="input-group"><label class="input-label">Booking Ref</label><input class="input-field" id="allocBookingRef" type="text" placeholder="Optional"></div>
+    <div class="input-group"><label class="input-label">Expected Delivery Date *</label><input class="input-field" id="allocDeliveryDate" type="date"></div>
+    <div class="input-group"><label class="input-label">Remarks</label><input class="input-field" id="allocRemarks" type="text" placeholder="Finance, exchange..."></div>
+    <div id="allocError" style="margin-bottom:10px"></div>
+    <div class="gap-10">
+      <button class="btn btn-gray" style="flex:1" onclick="closeAllocModal()">Cancel</button>
+      <button class="btn btn-dark" style="flex:2" onclick="confirmAllocation()">✅ Allocate</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ TKM BILLED LIST ══ -->
+<div class="modal-overlay" id="tkmBilledOverlay">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <div class="modal-title" style="margin:0">TKM Billed — Not Arrived</div>
+      <button onclick="closeTKMBilledSheet()" style="background:var(--gray-100);border:none;width:34px;height:34px;border-radius:50%;font-size:18px;cursor:pointer">✕</button>
+    </div>
+    <div class="alert alert-info" style="margin-bottom:14px">Vehicles billed by TKM not yet arrived.</div>
+    <div id="tkmBilledList"></div>
+    <button class="btn btn-gray mt-10" onclick="closeTKMBilledSheet()">Close</button>
+  </div>
+</div>
+
+<!-- ══ TKM BILLED ENTRY ══ -->
+<div class="modal-overlay" id="tkmBilledEntryOverlay">
+  <div class="modal" style="max-height:88vh;overflow-y:auto">
+    <div class="modal-handle"></div>
+    <div class="modal-title">📋 Register TKM Billed Vehicle</div>
+    <div class="input-group"><label class="input-label">Chassis No. *</label>
+      <input class="input-field" id="tbChassis" type="text" placeholder="Enter chassis"
+        style="text-transform:uppercase;letter-spacing:1px"
+        oninput="this.value=this.value.toUpperCase()">
+    </div>
+    <div class="input-group"><label class="input-label">Model *</label><select class="input-field" id="tbModel" onchange="tbDD('Variant')"><option value="">— Select Model —</option></select></div>
+    <div class="input-group"><label class="input-label">Variant *</label><select class="input-field" id="tbVariant" onchange="tbDD('Fuel')"><option value="">—</option></select></div>
+    <div class="input-group"><label class="input-label">Fuel *</label><select class="input-field" id="tbFuel" onchange="tbDD('Colour')"><option value="">—</option></select></div>
+    <div class="input-group"><label class="input-label">Colour *</label><select class="input-field" id="tbColour" onchange="tbDD('Interior')"><option value="">—</option></select></div>
+    <div class="input-group"><label class="input-label">Interior *</label><select class="input-field" id="tbInterior" onchange="tbDD('Suffix')"><option value="">—</option></select></div>
+    <div class="input-group"><label class="input-label">Suffix (auto)</label><input class="input-field ok" id="tbSuffix" readonly></div>
+    <div class="input-group"><label class="input-label">Billing Date *</label><input class="input-field" id="tbBillingDate" type="date"></div>
+    <div class="input-group"><label class="input-label">Invoice No.</label><input class="input-field" id="tbInvoiceNo" type="text" placeholder="e.g. TKM/2026/12345"></div>
+    <div id="tbError" style="margin-bottom:10px"></div>
+    <div class="gap-10">
+      <button class="btn btn-gray" style="flex:1" onclick="closeTKMBilledEntry()">Cancel</button>
+      <button class="btn btn-dark" style="flex:2" onclick="confirmTKMBilledEntry()">📋 Register</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ STAFF PANEL ══ -->
+<div class="staff-panel-overlay" id="staffPanelOverlay">
+  <div class="staff-panel">
+    <div class="staff-panel-header">
+      <div><div class="staff-panel-title">👥 Staff Management</div><div style="font-size:11px;color:#888;margin-top:2px">Add, edit or deactivate staff</div></div>
+      <button class="staff-panel-close" onclick="closeStaffPanel()">✕</button>
+    </div>
+    <div class="staff-panel-body">
+      <div class="staff-form">
+        <h3 id="staffFormTitle">➕ Add New Staff</h3>
+        <input class="sf-input" id="sfName" type="text" placeholder="Full Name *">
+        <select class="sf-select" id="sfRole">
+          <option value="">— Select Role —</option>
+          <option value="Owner">Owner</option>
+          <option value="Sales Manager">Sales Manager</option>
+          <option value="Service Manager">Service Manager</option>
+          <option value="EDP">EDP</option>
+          <option value="Sales Team Leader">Sales Team Leader</option>
+          <option value="Yard Staff">Yard Staff</option>
+        </select>
+        <input class="sf-input" id="sfPin" type="tel" placeholder="4-digit PIN *" maxlength="4"
+          oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,4)">
+        <input type="hidden" id="sfEditRow" value="">
+        <div class="sf-err" id="sfErr"></div>
+        <div class="sf-ok"  id="sfOk"></div>
+        <div class="sf-row">
+          <button class="btn btn-green" style="flex:2" onclick="saveStaff()">✅ Save</button>
+          <button class="btn btn-gray"  style="flex:1" onclick="resetStaffForm()">Clear</button>
+        </div>
+      </div>
+      <div style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:10px;margin-top:4px">Current Staff</div>
+      <div id="staffList"><div class="empty-state"><div class="e-icon">🔄</div><div class="e-text">Loading...</div></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ PROFILE MENU ══ -->
+<div class="modal-overlay" id="profileMenuOverlay">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="profileMenuName">Profile</div>
+    <div style="margin-bottom:16px"><div style="font-size:12px;color:#888" id="profileMenuRole"></div></div>
+    <button class="btn btn-outline" style="margin-bottom:10px" onclick="closeProfileMenu();openChangePIN()">🔑 Change My PIN</button>
+    <button class="btn btn-blue"   style="margin-bottom:10px" onclick="closeProfileMenu();openShiftSummary()">📋 Shift Summary</button>
+    <button class="btn btn-dark"   id="staffMgmtBtn" style="margin-bottom:10px;display:none" onclick="closeProfileMenu();openStaffPanel()">👥 Manage Staff</button>
+    <button class="btn btn-gray"   onclick="closeProfileMenu()">Close</button>
+  </div>
+</div>
+
+</body>
+</html>
