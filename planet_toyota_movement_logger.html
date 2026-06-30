@@ -1,0 +1,2991 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#EB0A1E">
+<title>Planet Toyota — Stock Tracker</title>
+<style>
+:root{
+  --red:#EB0A1E;--red-dark:#C0000F;--red-soft:#FFF0F0;
+  --dark:#0F1117;--navy:#1A1F3A;
+  --green:#059669;--green-soft:#ECFDF5;
+  --amber:#D97706;--amber-soft:#FFFBEB;
+  --purple:#7C3AED;--purple-soft:#EDE9FE;
+  --blue:#2563EB;--blue-soft:#EFF6FF;
+  --transit:#EA580C;--transit-soft:#FFF7ED;
+  --gray-50:#F9FAFB;--gray-100:#F3F4F6;--gray-200:#E5E7EB;
+  --gray-400:#9CA3AF;--gray-600:#4B5563;--gray-800:#1F2937;
+  --border:#E5E7EB;--shadow:0 1px 3px rgba(0,0,0,0.08);
+  --r:12px;--r-sm:8px;--r-xs:6px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--gray-100);color:var(--dark);font-size:15px;overscroll-behavior:none;}
+button{cursor:pointer;font-family:inherit;}
+#app{display:flex;flex-direction:column;height:100dvh;max-width:480px;margin:0 auto;background:white;position:relative;overflow:hidden;}
+.header{background:linear-gradient(135deg,var(--dark) 0%,var(--navy) 100%);color:white;padding:10px 14px 8px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;gap:8px;}
+.header-left{display:flex;align-items:center;gap:8px;min-width:0;}
+.header-title{font-size:15px;font-weight:800;letter-spacing:-0.3px;}
+.header-sub{font-size:10px;opacity:0.5;}
+.header-right{display:flex;align-items:center;gap:6px;flex-shrink:0;}
+.session-name{font-size:12px;font-weight:700;color:white;opacity:0.9;max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.role-pill{font-size:10px;font-weight:800;padding:2px 8px;border-radius:10px;text-transform:uppercase;letter-spacing:0.5px;display:inline-block;}
+.role-owner{background:#F59E0B;color:#1A1A2E;}
+.role-sales-manager,.role-edp{background:var(--blue);color:white;}
+.role-service-manager{background:var(--green);color:white;}
+.role-sales-team-leader{background:#F97316;color:white;}
+.role-yard-staff{background:#22C55E;color:white;}
+.btn-icon{background:rgba(255,255,255,0.12);border:none;color:white;width:32px;height:32px;border-radius:50%;font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.bottom-nav{background:white;border-top:1px solid var(--border);display:flex;flex-shrink:0;}
+.nav-btn{flex:1;border:none;background:none;padding:8px 4px 10px;display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--gray-400);font-size:10px;font-weight:600;}
+.nav-btn.active{color:var(--red);}
+.nav-icon{font-size:20px;line-height:1;}
+.content{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;}
+.tab{display:none;padding:14px;padding-bottom:28px;}
+.tab.active{display:block;}
+.card{background:white;border-radius:var(--r);border:1px solid var(--border);padding:16px;margin-bottom:12px;box-shadow:var(--shadow);}
+.card-title{font-size:12px;font-weight:700;color:var(--gray-600);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:12px;}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;border:none;border-radius:var(--r-sm);padding:13px 18px;font-size:14px;font-weight:700;width:100%;}
+.btn:active{opacity:0.75;}
+.btn-red{background:var(--red);color:white;}
+.btn-dark{background:var(--dark);color:white;}
+.btn-green{background:var(--green);color:white;}
+.btn-gray{background:var(--gray-100);color:var(--gray-800);}
+.btn-purple{background:var(--purple);color:white;}
+.btn-sm{padding:8px 14px;font-size:12px;}
+.btn-row{display:flex;gap:8px;}
+.btn-row .btn{flex:1;}
+.input-group{margin-bottom:12px;}
+.input-label{font-size:12px;font-weight:600;color:var(--gray-600);margin-bottom:5px;display:block;}
+.input-field{width:100%;border:1.5px solid var(--gray-200);border-radius:var(--r-sm);padding:11px 13px;font-size:14px;font-family:inherit;background:white;outline:none;transition:border-color 0.15s;}
+.input-field:focus{border-color:var(--dark);}
+.input-field.ok{border-color:var(--green);background:var(--green-soft);}
+.input-field.err{border-color:var(--red);}
+select.input-field{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%239CA3AF' d='M6 8L1 3h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;}
+.loc-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.loc-tile{border:2px solid var(--gray-200);border-radius:var(--r-sm);padding:13px 8px;text-align:center;cursor:pointer;background:white;transition:all 0.15s;}
+.loc-tile.active{border-color:var(--green);background:var(--green-soft);}
+.loc-tile-icon{font-size:20px;margin-bottom:3px;}
+.loc-tile-name{font-size:12px;font-weight:700;color:var(--dark);}
+.loc-tile.active .loc-tile-name{color:var(--green);}
+.src-row{display:flex;gap:8px;margin-bottom:8px;}
+.src-btn{flex:1;border:2px solid var(--gray-200);border-radius:var(--r-sm);padding:11px;text-align:center;cursor:pointer;background:white;font-size:13px;font-weight:700;color:var(--gray-600);}
+.src-btn.active{border-color:var(--green);background:var(--green-soft);color:var(--green);}
+.alert{border-radius:var(--r-sm);padding:10px 12px;font-size:12px;margin-bottom:10px;display:none;}
+.alert.show{display:flex;align-items:flex-start;gap:8px;}
+.alert-info{background:var(--blue-soft);color:var(--blue);display:flex!important;}
+.alert-warn{background:var(--amber-soft);color:var(--amber);display:flex!important;}
+.alert-err{color:var(--red);background:var(--red-soft);}
+.alert-ok{color:var(--green);background:var(--green-soft);}
+.pill{display:inline-flex;align-items:center;font-size:10px;font-weight:700;padding:3px 8px;border-radius:10px;}
+.pill-yard,.pill-stock{background:var(--green-soft);color:var(--green);}
+.pill-workshop{background:var(--blue-soft);color:var(--blue);}
+.pill-showroom{background:var(--purple-soft);color:var(--purple);}
+.pill-transit{background:var(--transit-soft);color:var(--transit);}
+.pill-tkm{background:var(--purple-soft);color:var(--purple);}
+.pill-allocated{background:#FEF3C7;color:#92400E;}
+.pill-available{background:var(--green-soft);color:var(--green);}
+#loader{position:fixed;inset:0;background:rgba(0,0,0,0.45);display:none;align-items:center;justify-content:center;z-index:9999;}
+#loader.show{display:flex;}
+.loader-box{background:white;border-radius:var(--r);padding:24px 32px;display:flex;flex-direction:column;align-items:center;gap:10px;}
+.spinner{width:32px;height:32px;border:3px solid var(--gray-200);border-top-color:var(--red);border-radius:50%;animation:spin 0.7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.loader-text{font-size:13px;font-weight:600;color:var(--gray-600);}
+#loginScreen{position:fixed;inset:0;background:linear-gradient(160deg,var(--dark) 0%,var(--navy) 60%,#2D1B69 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:500;padding:24px;}
+.login-brand{color:white;font-size:28px;font-weight:900;letter-spacing:-0.5px;text-align:center;}
+.login-sub{color:rgba(255,255,255,0.4);font-size:13px;margin:4px 0 28px;text-align:center;}
+.login-card{background:white;border-radius:20px;padding:20px;width:100%;max-width:340px;}
+.name-select{width:100%;border:1.5px solid var(--gray-200);border-radius:var(--r-sm);padding:12px 13px;font-size:15px;font-family:inherit;background:white;outline:none;margin-bottom:16px;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%239CA3AF' d='M6 8L1 3h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 13px center;}
+.pin-label{font-size:11px;font-weight:600;color:var(--gray-400);text-align:center;margin-bottom:10px;text-transform:uppercase;letter-spacing:0.8px;}
+.pin-dots{display:flex;justify-content:center;gap:12px;margin-bottom:16px;}
+.pin-dot{width:14px;height:14px;border-radius:50%;background:var(--gray-200);transition:background 0.15s;}
+.pin-dot.filled{background:var(--dark);}
+.pin-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+.pin-key{background:var(--gray-100);border:none;border-radius:var(--r-sm);padding:16px;font-size:20px;font-weight:700;color:var(--dark);}
+.pin-key:active{background:var(--gray-200);}
+.pin-key.del{background:var(--red-soft);color:var(--red);}
+.pin-err{font-size:12px;color:var(--red);text-align:center;min-height:18px;margin-top:6px;}
+.dash-strip{background:linear-gradient(135deg,var(--dark),var(--navy));border-radius:var(--r);padding:18px;margin-bottom:12px;color:white;}
+.dash-total{font-size:52px;font-weight:900;letter-spacing:-2px;line-height:1;}
+.dash-total-label{font-size:11px;opacity:0.5;text-transform:uppercase;letter-spacing:0.8px;margin-top:4px;}
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;}
+.stat-card{border-radius:var(--r);padding:14px;cursor:pointer;border:1px solid var(--border);background:white;box-shadow:var(--shadow);}
+.stat-card:active{opacity:0.85;}
+.stat-num{font-size:30px;font-weight:900;letter-spacing:-1px;line-height:1;}
+.stat-label{font-size:11px;color:var(--gray-400);margin-top:4px;font-weight:600;}
+.stat-yard .stat-num{color:var(--green);}
+.stat-workshop .stat-num{color:var(--blue);}
+.stat-showroom .stat-num{color:var(--purple);}
+.stat-transit .stat-num{color:var(--transit);}
+.stat-tkm{grid-column:1/-1;}
+.stat-tkm .stat-num{color:var(--purple);}
+.model-row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--gray-100);cursor:pointer;}
+.model-row:last-child{border-bottom:none;}
+.model-rank{font-size:11px;font-weight:800;color:var(--gray-300);width:18px;flex-shrink:0;}
+.model-info{flex:1;min-width:0;}
+.model-name{font-size:14px;font-weight:700;color:var(--dark);}
+.model-bar-wrap{height:3px;background:var(--gray-100);border-radius:2px;margin-top:5px;}
+.model-bar{height:100%;border-radius:2px;background:linear-gradient(90deg,var(--red),#FF4D5E);}
+.model-count{font-size:26px;font-weight:900;color:var(--dark);letter-spacing:-0.5px;}
+.arr-btns{display:flex;flex-direction:column;gap:8px;margin-bottom:12px;}
+.arr-btn{border:none;border-radius:var(--r-sm);padding:14px 16px;text-align:left;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:10px;}
+.arr-btn.drive{background:var(--dark);color:white;}
+.arr-btn.trailer{background:#064E3B;color:white;}
+.arr-btn.tkmbill{background:var(--purple);color:white;}
+.search-bar{margin-bottom:10px;}
+.search-input{width:100%;border:1.5px solid var(--gray-200);border-radius:var(--r-sm);padding:10px 13px;font-size:14px;font-family:inherit;outline:none;}
+.search-input:focus{border-color:var(--dark);}
+.filter-row{display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;margin-bottom:12px;scrollbar-width:none;}
+.filter-row::-webkit-scrollbar{display:none;}
+.filter-chip{border:none;border-radius:20px;padding:6px 14px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;background:var(--gray-100);color:var(--gray-600);}
+.filter-chip.active{background:var(--dark);color:white;}
+.chassis-row{background:white;border-radius:var(--r-sm);padding:13px;margin-bottom:8px;border:1px solid var(--gray-200);box-shadow:var(--shadow);cursor:pointer;}
+.cr-model{font-size:14px;font-weight:700;color:var(--dark);}
+.cr-suffix{color:var(--red);font-size:11px;}
+.cr-chassis{font-size:12px;font-family:monospace;color:var(--gray-600);margin-top:3px;letter-spacing:0.5px;}
+.cr-row{display:flex;align-items:center;flex-wrap:wrap;gap:4px;margin-top:6px;}
+.cr-days{font-size:11px;font-weight:700;margin-left:auto;}
+.cr-actions{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;}
+.act-btn{border:none;border-radius:var(--r-xs);padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;}
+.act-move{background:var(--dark);color:white;}
+.act-alloc{background:#FEF3C7;color:#92400E;}
+.act-free{background:var(--red-soft);color:var(--red);}
+.transit-card{background:linear-gradient(135deg,var(--transit),#C2410C);border-radius:var(--r);padding:16px;margin-bottom:10px;color:white;}
+.tc-model{font-size:15px;font-weight:800;}
+.tc-chassis{font-size:12px;font-family:monospace;opacity:0.75;margin-top:3px;}
+.tc-meta{font-size:11px;opacity:0.7;margin-top:6px;}
+.tc-confirm{background:white;color:var(--transit);border:none;border-radius:var(--r-sm);padding:10px 18px;font-size:13px;font-weight:800;margin-top:12px;cursor:pointer;width:100%;}
+.recent-item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--gray-100);}
+.recent-item:last-child{border-bottom:none;}
+.recent-dot{width:8px;height:8px;border-radius:50%;background:var(--red);flex-shrink:0;}
+.recent-info{flex:1;min-width:0;}
+.recent-chassis{font-size:13px;font-weight:700;font-family:monospace;letter-spacing:0.5px;}
+.recent-detail{font-size:11px;color:var(--gray-400);margin-top:2px;}
+.recent-time{font-size:10px;color:var(--gray-400);flex-shrink:0;}
+#vehicleScreen{position:absolute;inset:0;background:var(--gray-100);z-index:100;display:none;flex-direction:column;}
+#vehicleScreen.open{display:flex;}
+.vs-header{background:white;border-bottom:1px solid var(--border);padding:12px 14px;display:flex;align-items:center;gap:10px;flex-shrink:0;}
+.vs-back{background:var(--gray-100);border:none;width:34px;height:34px;border-radius:50%;font-size:18px;display:flex;align-items:center;justify-content:center;}
+.vs-title{font-size:16px;font-weight:800;color:var(--dark);flex:1;min-width:0;}
+.vs-body{flex:1;overflow-y:auto;padding:14px;}
+.v-hero{background:linear-gradient(135deg,var(--dark),var(--navy));border-radius:var(--r);padding:18px;margin-bottom:12px;color:white;}
+.v-model{font-size:20px;font-weight:900;letter-spacing:-0.3px;}
+.v-variant{font-size:13px;opacity:0.65;margin-top:4px;}
+.v-chassis{font-size:11px;font-family:monospace;opacity:0.5;margin-top:6px;letter-spacing:1px;}
+.v-suffix{font-size:12px;color:#FF7070;font-weight:700;margin-top:3px;}
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;}
+.detail-item{background:white;border-radius:var(--r-sm);padding:12px;border:1px solid var(--border);}
+.di-label{font-size:10px;font-weight:700;color:var(--gray-400);text-transform:uppercase;letter-spacing:0.5px;}
+.di-value{font-size:14px;font-weight:700;color:var(--dark);margin-top:3px;}
+.alloc-card{border-radius:var(--r);padding:14px;margin-bottom:12px;border:1px solid transparent;}
+.alloc-allocated{background:#FEF3C7;border-color:#FDE68A;}
+.alloc-available{background:var(--green-soft);border-color:#A7F3D0;}
+.alloc-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;opacity:0.7;}
+.alloc-name{font-size:17px;font-weight:800;margin-top:4px;color:#92400E;}
+.alloc-ref{font-size:12px;margin-top:3px;color:#B45309;}
+.hist-item{display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--gray-100);}
+.hist-item:last-child{border-bottom:none;}
+.hist-dot{width:8px;height:8px;border-radius:50%;background:var(--gray-300);flex-shrink:0;margin-top:4px;}
+.hist-dot.dispatch{background:var(--transit);}
+.hist-dot.receive{background:var(--green);}
+.hist-dot.arrival{background:var(--blue);}
+.hist-info{flex:1;}
+.hist-action{font-size:13px;font-weight:600;color:var(--dark);}
+.hist-meta{font-size:11px;color:var(--gray-400);margin-top:2px;}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);display:none;align-items:flex-end;justify-content:center;z-index:300;backdrop-filter:blur(3px);}
+.overlay.open{display:flex;}
+.sheet{background:white;border-radius:20px 20px 0 0;width:100%;max-height:88vh;display:flex;flex-direction:column;animation:slideUp 0.22s cubic-bezier(0.32,0.72,0,1);}
+@keyframes slideUp{from{transform:translateY(100%);}to{transform:translateY(0);}}
+.sheet-handle{width:40px;height:4px;background:var(--gray-200);border-radius:2px;margin:10px auto 0;flex-shrink:0;}
+.sheet-header{padding:14px 18px;border-bottom:1px solid var(--gray-100);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.sheet-title{font-size:17px;font-weight:800;color:var(--dark);}
+.sheet-close{background:var(--gray-100);border:none;width:32px;height:32px;border-radius:50%;font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.sheet-body{overflow-y:auto;padding:16px 18px 40px;flex:1;}
+.sheet-sub{font-size:12px;color:var(--gray-400);margin-top:3px;}
+#modelDrillOverlay{z-index:400;}
+#colourDrillOverlay{z-index:500;}
+.variant-card{background:white;border-radius:var(--r);border:1px solid var(--border);padding:14px;margin-bottom:10px;}
+.vc-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--gray-100);}
+.vc-name{font-size:14px;font-weight:800;color:var(--dark);}
+.vc-total{background:var(--red);color:white;font-size:12px;font-weight:800;padding:3px 10px;border-radius:10px;}
+.fuel-badge{background:var(--blue-soft);color:var(--blue);font-size:10px;font-weight:700;padding:2px 7px;border-radius:8px;margin-left:6px;}
+.colour-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--gray-100);cursor:pointer;}
+.colour-row:last-child{border-bottom:none;}
+.colour-row:active{background:var(--gray-50);}
+.colour-left{display:flex;align-items:center;gap:10px;}
+.colour-swatch{width:26px;height:26px;border-radius:6px;border:2px solid rgba(0,0,0,0.08);flex-shrink:0;}
+.colour-name{font-size:13px;font-weight:600;color:var(--dark);}
+.colour-pills{display:flex;flex-wrap:wrap;gap:3px;margin-top:3px;}
+.lq-pill{font-size:10px;font-weight:700;padding:2px 7px;border-radius:8px;display:inline-flex;gap:3px;}
+.colour-right{display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.colour-count{font-size:22px;font-weight:900;color:var(--dark);}
+.colour-arrow{font-size:14px;color:var(--gray-300);}
+.chassis-card{background:var(--gray-50);border-radius:var(--r-sm);padding:13px;margin-bottom:8px;border:1px solid var(--border);}
+.cc-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;}
+.cc-info{flex:1;min-width:0;}
+.cc-chassis{font-size:13px;font-family:monospace;font-weight:700;color:var(--dark);letter-spacing:0.5px;}
+.cc-suffix{font-size:11px;color:var(--red);margin-top:2px;}
+.cc-pills{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;}
+.cc-age{text-align:right;flex-shrink:0;}
+.cc-age-num{font-size:22px;font-weight:900;line-height:1;}
+.cc-age-lbl{font-size:9px;font-weight:600;color:var(--gray-400);}
+.cc-buttons{display:flex;gap:6px;margin-top:8px;}
+.staff-item{display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--gray-100);}
+.staff-item:last-child{border-bottom:none;}
+.staff-avatar{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:white;flex-shrink:0;}
+.staff-name{font-size:14px;font-weight:700;}
+.staff-meta{display:flex;align-items:center;gap:6px;margin-top:3px;}
+.staff-info{flex:1;min-width:0;}
+.staff-actions{display:flex;gap:5px;flex-shrink:0;}
+.sa-btn{border:none;border-radius:var(--r-xs);padding:6px 9px;font-size:12px;font-weight:700;cursor:pointer;}
+.sa-edit{background:var(--blue-soft);color:var(--blue);}
+.sa-deact{background:var(--red-soft);color:var(--red);}
+.sa-react{background:var(--green-soft);color:var(--green);}
+.staff-inactive{opacity:0.5;}
+#trailerScreen{position:fixed;inset:0;background:var(--gray-100);z-index:700;display:none;flex-direction:column;}
+#trailerScreen.open{display:flex;}
+.ts-header{background:#064E3B;padding:12px 14px;display:flex;align-items:center;gap:10px;flex-shrink:0;}
+.ts-back{background:rgba(255,255,255,0.2);border:none;color:white;width:34px;height:34px;border-radius:50%;font-size:18px;display:flex;align-items:center;justify-content:center;}
+.ts-title{font-size:16px;font-weight:800;color:white;}
+.ts-body{flex:1;overflow-y:auto;padding:14px;padding-bottom:80px;}
+.ts-footer{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:white;border-top:1px solid var(--border);padding:12px 14px;display:flex;gap:8px;}
+.step-bar{display:flex;align-items:center;margin-bottom:20px;}
+.step-node{display:flex;flex-direction:column;align-items:center;flex-shrink:0;}
+.step-circle{width:30px;height:30px;border-radius:50%;border:2px solid var(--gray-200);background:white;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:var(--gray-400);}
+.step-circle.done{background:#064E3B;border-color:#064E3B;color:white;}
+.step-circle.active{border-color:#064E3B;color:#064E3B;}
+.step-lbl{font-size:9px;font-weight:600;color:var(--gray-400);margin-top:4px;text-transform:uppercase;letter-spacing:0.4px;text-align:center;}
+.step-lbl.active{color:#064E3B;}
+.step-line{flex:1;height:2px;background:var(--gray-200);margin:0 4px;margin-bottom:18px;}
+.step-line.done{background:#064E3B;}
+.veh-mini{background:white;border-radius:var(--r-sm);padding:11px;margin-bottom:8px;border:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.veh-mini-model{font-size:13px;font-weight:700;color:var(--dark);}
+.veh-mini-chassis{font-size:11px;font-family:monospace;color:var(--gray-400);margin-top:2px;}
+.veh-mini-rm{background:var(--red-soft);color:var(--red);border:none;border-radius:var(--r-xs);padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer;}
+.success-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);display:none;align-items:center;justify-content:center;z-index:900;padding:20px;}
+.success-overlay.open{display:flex;}
+.success-box{background:white;border-radius:var(--r);padding:28px 24px;width:100%;max-width:340px;text-align:center;}
+.success-icon{font-size:52px;margin-bottom:12px;}
+.success-title{font-size:20px;font-weight:800;color:var(--dark);}
+.success-msg{font-size:13px;color:var(--gray-400);margin-top:6px;margin-bottom:16px;}
+.success-detail{text-align:left;background:var(--gray-50);border-radius:var(--r-sm);padding:12px;margin-bottom:16px;}
+.sd-row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--gray-100);}
+.sd-row:last-child{border-bottom:none;}
+.sd-key{font-size:11px;color:var(--gray-400);}
+.sd-val{font-size:12px;font-weight:600;color:var(--dark);text-align:right;max-width:55%;}
+.empty{text-align:center;padding:32px 16px;color:var(--gray-400);}
+.empty-icon{font-size:36px;margin-bottom:8px;}
+.empty-text{font-size:14px;font-weight:600;}
+.empty-sub{font-size:12px;margin-top:3px;}
+.divider{height:1px;background:var(--gray-100);margin:12px 0;}
+.mt-8{margin-top:8px;}
+.mt-12{margin-top:12px;}
+.hidden{display:none!important;}
+#debugBar{position:fixed;top:0;left:0;right:0;background:var(--dark);color:white;font-size:11px;font-weight:700;text-align:center;padding:7px 12px;z-index:9998;display:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+</style>
+<script src="https://unpkg.com/@zxing/library@0.20.0/umd/index.min.js"></script>
+</head>
+<body>
+<div id="app">
+
+<!-- LOGIN -->
+<div id="loginScreen">
+  <div style="font-size:52px;margin-bottom:8px">🚗</div>
+  <div class="login-brand">Planet Toyota</div>
+  <div class="login-sub">Stock Tracker · Narnaul</div>
+  <div class="login-card">
+    <select id="nameSelect" class="name-select"><option value="">— Select your name —</option></select>
+    <div class="pin-label">Enter PIN</div>
+    <div class="pin-dots">
+      <div class="pin-dot" id="d0"></div><div class="pin-dot" id="d1"></div>
+      <div class="pin-dot" id="d2"></div><div class="pin-dot" id="d3"></div>
+    </div>
+    <div class="pin-pad">
+      <button class="pin-key" onclick="PIN.key(1)">1</button>
+      <button class="pin-key" onclick="PIN.key(2)">2</button>
+      <button class="pin-key" onclick="PIN.key(3)">3</button>
+      <button class="pin-key" onclick="PIN.key(4)">4</button>
+      <button class="pin-key" onclick="PIN.key(5)">5</button>
+      <button class="pin-key" onclick="PIN.key(6)">6</button>
+      <button class="pin-key" onclick="PIN.key(7)">7</button>
+      <button class="pin-key" onclick="PIN.key(8)">8</button>
+      <button class="pin-key" onclick="PIN.key(9)">9</button>
+      <button class="pin-key" onclick="PIN.clear()">C</button>
+      <button class="pin-key" onclick="PIN.key(0)">0</button>
+      <button class="pin-key del" onclick="PIN.del()">&#9003;</button>
+    </div>
+    <div class="pin-err" id="pinErr"></div>
+  </div>
+</div>
+
+<!-- DEBUG BAR -->
+<div id="debugBar"></div>
+
+<!-- HEADER -->
+<div class="header" id="mainHeader" style="display:none">
+  <div class="header-left">
+    <span style="font-size:18px">🚗</span>
+    <div><div class="header-title">Planet Toyota</div><div class="header-sub">Stock Tracker</div></div>
+  </div>
+  <div style="flex:1;text-align:center">
+    <div class="session-name" id="hdrName"></div>
+    <div id="hdrRole" class="role-pill mt-8"></div>
+  </div>
+  <div class="header-right">
+    <button class="btn-icon" onclick="openProfile()">&#128100;</button>
+    <button class="btn-icon" style="background:var(--red)" onclick="doLogout()">&#8617;</button>
+  </div>
+</div>
+
+<!-- CONTENT -->
+<div class="content" id="mainContent" style="display:none">
+
+  <!-- DASHBOARD TAB -->
+  <div class="tab" id="tabDash">
+    <div id="dashContent"><div class="empty"><div class="empty-icon">&#128202;</div><div class="empty-text">Loading dashboard...</div></div></div>
+  </div>
+
+  <!-- LOG MOVEMENT TAB -->
+  <div class="tab" id="tabLog">
+    <div class="card-title">Arrivals &amp; Registration</div>
+    <div class="arr-btns">
+      <button class="arr-btn drive" onclick="openGateEntry()">&#128663; Drive Down &mdash; Single Vehicle</button>
+      <button class="arr-btn trailer" onclick="openTrailer()">&#128667; Bulk Trailer Arrival</button>
+      <button class="arr-btn tkmbill hidden" id="btnTkmBill" onclick="openTkmBilled()">&#128203; Register TKM Billed</button>
+    </div>
+    <div class="divider"></div>
+    <div class="card-title mt-8">Log Vehicle Movement</div>
+    <div class="card">
+      <div class="input-group">
+        <label class="input-label">Chassis No. *</label>
+        <div style="display:flex;gap:8px">
+          <input class="input-field" id="mvChassis" type="text" placeholder="Enter chassis number" style="text-transform:uppercase;letter-spacing:1px;flex:1" oninput="this.value=this.value.toUpperCase()">
+          <button class="btn-icon" style="background:var(--dark);width:44px;height:44px;border-radius:var(--r-sm);flex-shrink:0" onclick="openScanner(\'mvChassis\')">📷</button>
+        </div>
+      </div>
+      <div class="input-group">
+        <label class="input-label">Move To *</label>
+        <div class="loc-grid">
+          <div class="loc-tile" id="mvL_Stockyard" onclick="mvSetLoc(this,'Stockyard')"><div class="loc-tile-icon">&#128338;</div><div class="loc-tile-name">Stockyard</div></div>
+          <div class="loc-tile" id="mvL_Workshop"  onclick="mvSetLoc(this,'Workshop')"><div class="loc-tile-icon">&#128295;</div><div class="loc-tile-name">Workshop</div></div>
+          <div class="loc-tile" id="mvL_Showroom"  onclick="mvSetLoc(this,'Showroom')"><div class="loc-tile-icon">&#127970;</div><div class="loc-tile-name">Showroom</div></div>
+          <div class="loc-tile" id="mvL_Customer"  onclick="mvSetLoc(this,'Customer Test')"><div class="loc-tile-icon">&#128664;</div><div class="loc-tile-name">Test Drive</div></div>
+        </div>
+      </div>
+      <div class="input-group">
+        <label class="input-label">Driver / Staff *</label>
+        <input class="input-field" id="mvDriver" type="text" placeholder="Name of person moving">
+      </div>
+      <div class="input-group">
+        <label class="input-label">Remarks</label>
+        <input class="input-field" id="mvRemarks" type="text" placeholder="Optional">
+      </div>
+      <div class="alert alert-err" id="mvErr"></div>
+      <button class="btn btn-dark" onclick="doLogMovement()">&#128663; Dispatch Vehicle</button>
+    </div>
+    <div class="card-title mt-8">Recent Movements</div>
+    <div class="card" id="recentList"><div class="empty"><div class="empty-text">No recent movements</div></div></div>
+  </div>
+
+  <!-- RECEIVE TAB -->
+  <div class="tab" id="tabReceive">
+    <button class="btn btn-dark mt-8" style="margin-bottom:14px" onclick="openScanner(\'receiveScanTarget\')">📷 Scan Chassis to Receive</button>
+    <div class="card-title">In Transit &mdash; Awaiting Receipt</div>
+    <div id="transitList"><div class="empty"><div class="empty-icon">&#128667;</div><div class="empty-text">No vehicles in transit</div></div></div>
+  </div>
+
+  <!-- STOCK SEARCH TAB -->
+  <div class="tab" id="tabStock">
+    <div class="search-bar">
+      <input class="search-input" id="stockSearch" type="text" placeholder="Search chassis, model, colour, customer..." oninput="renderStock()">
+    </div>
+    <div class="filter-row">
+      <button class="filter-chip active" onclick="setFilter('ALL',this)">All</button>
+      <button class="filter-chip" onclick="setFilter('Stockyard',this)">&#128338; Stockyard</button>
+      <button class="filter-chip" onclick="setFilter('Workshop',this)">&#128295; Workshop</button>
+      <button class="filter-chip" onclick="setFilter('Showroom',this)">&#127970; Showroom</button>
+      <button class="filter-chip" onclick="setFilter('In Transit',this)">&#128667; In Transit</button>
+      <button class="filter-chip" onclick="setFilter('TKM Billed',this)">&#128203; TKM Billed</button>
+      <button class="filter-chip" onclick="setFilter('Allocated',this)">&#128278; Allocated</button>
+    </div>
+    <div id="stockList"><div class="empty"><div class="empty-icon">&#128269;</div><div class="empty-text">Loading...</div></div></div>
+  </div>
+
+  <!-- DAILY STOCK SUMMARY TAB (Owner / Sales Manager only) -->
+  <div class="tab" id="tabDaily">
+    <div class="card">
+      <label class="input-label">Select Date</label>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input class="input-field" id="dailyDate" type="date" style="flex:1" onchange="loadDailySummary()">
+        <button class="btn btn-dark btn-sm" style="width:auto;padding:11px 16px" onclick="setDailyToday()">Today</button>
+      </div>
+    </div>
+    <div id="dailyContent"><div class="empty"><div class="empty-icon">&#128202;</div><div class="empty-text">Loading...</div></div></div>
+  </div>
+
+</div><!-- /content -->
+
+<!-- BOTTOM NAV -->
+<div class="bottom-nav" id="bottomNav" style="display:none">
+  <button class="nav-btn hidden" id="navDash"    onclick="switchTab('Dash')"><span class="nav-icon">&#128202;</span>Dashboard</button>
+  <button class="nav-btn hidden" id="navLog"     onclick="switchTab('Log')"><span class="nav-icon">&#128663;</span>Movement</button>
+  <button class="nav-btn hidden" id="navReceive" onclick="switchTab('Receive')"><span class="nav-icon">&#128229;</span>Receive</button>
+  <button class="nav-btn hidden" id="navStock"   onclick="switchTab('Stock')"><span class="nav-icon">&#128269;</span>Search</button>
+  <button class="nav-btn hidden" id="navDaily"   onclick="switchTab('Daily')"><span class="nav-icon">&#128197;</span>Daily</button>
+</div>
+
+<!-- VEHICLE DETAIL SCREEN -->
+<div id="vehicleScreen">
+  <div class="vs-header">
+    <button class="vs-back" onclick="closeVehicle()">&#8592;</button>
+    <div class="vs-title" id="vsTitle">Vehicle Detail</div>
+  </div>
+  <div class="vs-body" id="vsBody"></div>
+</div>
+
+<!-- GATE ENTRY SHEET -->
+<div class="overlay" id="gateOverlay" onclick="if(event.target===this)closeOverlay('gateOverlay')">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+      <div><div class="sheet-title">&#128663; Drive Down Gate Entry</div><div class="sheet-sub">Single vehicle arrival</div></div>
+      <button class="sheet-close" onclick="closeOverlay('gateOverlay')">&#10005;</button>
+    </div>
+    <div class="sheet-body">
+      <div class="input-group">
+        <label class="input-label">Source *</label>
+        <div class="src-row">
+          <div class="src-btn active" id="geSrc_TKM" onclick="geSetSrc('TKM')">TKM</div>
+          <div class="src-btn" id="geSrc_CoDealer" onclick="geSetSrc('Co-Dealer')">Co-Dealer</div>
+        </div>
+        <input class="input-field hidden" id="geCoDealerName" type="text" placeholder="Co-dealer name and city">
+      </div>
+      <div class="input-group"><label class="input-label">Chassis No. *</label>
+        <div style="display:flex;gap:8px">
+          <input class="input-field" id="geChassis" type="text" placeholder="Enter chassis" style="text-transform:uppercase;letter-spacing:1px;flex:1" oninput="this.value=this.value.toUpperCase()">
+          <button class="btn-icon" style="background:var(--dark);width:44px;height:44px;border-radius:var(--r-sm);flex-shrink:0" onclick="openScanner(\'geChassis\')">📷</button>
+        </div>
+      </div>
+      <div class="input-group"><label class="input-label">Model *</label><select class="input-field" id="geModel" onchange="geDD('Variant')"><option value="">— Select Model —</option></select></div>
+      <div class="input-group"><label class="input-label">Variant *</label><select class="input-field" id="geVariant" onchange="geDD('Fuel')"><option value="">—</option></select></div>
+      <div class="input-group"><label class="input-label">Fuel *</label><select class="input-field" id="geFuel" onchange="geDD('Colour')"><option value="">—</option></select></div>
+      <div class="input-group"><label class="input-label">Colour *</label><select class="input-field" id="geColour" onchange="geDD('Interior')"><option value="">—</option></select></div>
+      <div class="input-group"><label class="input-label">Interior *</label><select class="input-field" id="geInterior" onchange="geDD('Suffix')"><option value="">—</option></select></div>
+      <div class="input-group"><label class="input-label">Suffix (auto-filled)</label><input class="input-field ok" id="geSuffix" readonly placeholder="Will auto-fill"></div>
+      <div class="input-group">
+        <label class="input-label">Received At *</label>
+        <div class="loc-grid">
+          <div class="loc-tile active" id="geL_Stockyard" onclick="geSetLoc(this,'Stockyard')"><div class="loc-tile-icon">&#128338;</div><div class="loc-tile-name">Stockyard</div></div>
+          <div class="loc-tile" id="geL_Workshop" onclick="geSetLoc(this,'Workshop')"><div class="loc-tile-icon">&#128295;</div><div class="loc-tile-name">Workshop</div></div>
+          <div class="loc-tile" id="geL_Showroom" onclick="geSetLoc(this,'Showroom')"><div class="loc-tile-icon">&#127970;</div><div class="loc-tile-name">Showroom</div></div>
+        </div>
+      </div>
+      <div class="input-group"><label class="input-label">Driver Name *</label><input class="input-field" id="geDriver" type="text" placeholder="TKM transporter driver name"></div>
+      <div class="input-group"><label class="input-label">Dispatch Date</label><input class="input-field" id="geDispatch" type="date"></div>
+      <div class="input-group"><label class="input-label">Remarks</label><input class="input-field" id="geRemarks" type="text" placeholder="Optional"></div>
+      <div class="alert alert-err" id="geErr"></div>
+      <button class="btn btn-dark" onclick="confirmGateEntry()">&#9989; Register Arrival</button>
+    </div>
+  </div>
+</div>
+
+<!-- TKM BILLED SHEET -->
+<div class="overlay" id="tkmBilledOverlay" onclick="if(event.target===this)closeOverlay('tkmBilledOverlay')">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+      <div><div class="sheet-title">&#128203; Register TKM Billed</div><div class="sheet-sub">Vehicle billed but not yet arrived</div></div>
+      <button class="sheet-close" onclick="closeOverlay('tkmBilledOverlay')">&#10005;</button>
+    </div>
+    <div class="sheet-body">
+      <div class="alert alert-info">Vehicle billed by TKM but not yet dispatched or arrived at dealership.</div>
+      <div class="input-group"><label class="input-label">Chassis No. *</label>
+        <div style="display:flex;gap:8px">
+          <input class="input-field" id="tbChassis" type="text" placeholder="Enter chassis" style="text-transform:uppercase;letter-spacing:1px;flex:1" oninput="this.value=this.value.toUpperCase()">
+          <button class="btn-icon" style="background:var(--dark);width:44px;height:44px;border-radius:var(--r-sm);flex-shrink:0" onclick="openScanner(\'tbChassis\')">📷</button>
+        </div>
+      </div>
+      <div class="input-group"><label class="input-label">Model *</label><select class="input-field" id="tbModel" onchange="tbDD('Variant')"><option value="">— Select Model —</option></select></div>
+      <div class="input-group"><label class="input-label">Variant *</label><select class="input-field" id="tbVariant" onchange="tbDD('Fuel')"><option value="">—</option></select></div>
+      <div class="input-group"><label class="input-label">Fuel *</label><select class="input-field" id="tbFuel" onchange="tbDD('Colour')"><option value="">—</option></select></div>
+      <div class="input-group"><label class="input-label">Colour *</label><select class="input-field" id="tbColour" onchange="tbDD('Interior')"><option value="">—</option></select></div>
+      <div class="input-group"><label class="input-label">Interior *</label><select class="input-field" id="tbInterior" onchange="tbDD('Suffix')"><option value="">—</option></select></div>
+      <div class="input-group"><label class="input-label">Suffix (auto)</label><input class="input-field ok" id="tbSuffix" readonly></div>
+      <div class="input-group"><label class="input-label">Billing Date *</label><input class="input-field" id="tbBillingDate" type="date"></div>
+      <div class="input-group"><label class="input-label">TKM Invoice No.</label><input class="input-field" id="tbInvoiceNo" type="text" placeholder="e.g. TKM/2026/12345"></div>
+      <div class="alert alert-err" id="tbErr"></div>
+      <button class="btn btn-purple" onclick="confirmTkmBilled()">&#128203; Register</button>
+    </div>
+  </div>
+</div>
+
+<!-- ALLOCATION SHEET -->
+<div class="overlay" id="allocOverlay" onclick="if(event.target===this)closeOverlay('allocOverlay')">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+      <div class="sheet-title" id="allocTitle">Allocate Vehicle</div>
+      <button class="sheet-close" onclick="closeOverlay('allocOverlay')">&#10005;</button>
+    </div>
+    <div class="sheet-body">
+      <div class="v-hero" id="allocVehicleCard" style="margin-bottom:14px"></div>
+      <div class="input-group"><label class="input-label">Customer Name *</label><input class="input-field" id="allocCust" type="text" placeholder="Full name"></div>
+      <div class="input-group"><label class="input-label">Booking Ref</label><input class="input-field" id="allocRef" type="text" placeholder="Optional booking reference"></div>
+      <div class="input-group"><label class="input-label">Expected Delivery *</label><input class="input-field" id="allocDate" type="date"></div>
+      <div class="input-group"><label class="input-label">Remarks</label><input class="input-field" id="allocRemarks" type="text" placeholder="Finance, exchange, accessories..."></div>
+      <div class="alert alert-err" id="allocErr"></div>
+      <button class="btn btn-dark" onclick="confirmAlloc()">&#9989; Allocate</button>
+    </div>
+  </div>
+</div>
+
+<!-- SOLD SHEET -->
+<div class="overlay" id="soldOverlay" onclick="if(event.target===this)closeOverlay('soldOverlay')">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+      <div class="sheet-title">Mark as Sold</div>
+      <button class="sheet-close" onclick="closeOverlay('soldOverlay')">&#10005;</button>
+    </div>
+    <div class="sheet-body">
+      <div class="alert alert-warn">Vehicle stays in stock until delivered. Status becomes Sold &mdash; Not Delivered.</div>
+      <div class="v-hero" id="soldVCard" style="margin-bottom:14px"></div>
+      <div class="input-group"><label class="input-label">Customer / Booking Ref *</label><input class="input-field" id="soldRef" type="text" placeholder="e.g. BK-2026-123 or customer name"></div>
+      <div class="input-group"><label class="input-label">Remarks</label><input class="input-field" id="soldRemarks" type="text" placeholder="Finance, insurance..."></div>
+      <div class="alert alert-err" id="soldErr"></div>
+      <button class="btn btn-dark" onclick="confirmSold()">&#9989; Confirm Sold</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODEL DRILL OVERLAY -->
+<div class="overlay" id="modelDrillOverlay" onclick="if(event.target===this)closeModelDrill()">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+      <div>
+        <div class="sheet-title" id="mdTitle"></div>
+        <div class="sheet-sub" id="mdSub"></div>
+      </div>
+      <button class="sheet-close" onclick="closeModelDrill()">&#10005;</button>
+    </div>
+    <div class="sheet-body" id="mdBody"></div>
+  </div>
+</div>
+
+<!-- COLOUR DRILL OVERLAY -->
+<div class="overlay" id="colourDrillOverlay" onclick="if(event.target===this)closeColourDrill()">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+      <div>
+        <div class="sheet-title" id="cdTitle"></div>
+        <div class="sheet-sub" id="cdSub"></div>
+      </div>
+      <button class="sheet-close" onclick="closeColourDrill()">&#10005;</button>
+    </div>
+    <div class="sheet-body" id="cdBody"></div>
+  </div>
+</div>
+
+<!-- TKM LIST OVERLAY -->
+<div class="overlay" id="tkmListOverlay" onclick="if(event.target===this)closeOverlay('tkmListOverlay')">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+      <div class="sheet-title">&#128203; TKM Billed &mdash; Not Arrived</div>
+      <button class="sheet-close" onclick="closeOverlay('tkmListOverlay')">&#10005;</button>
+    </div>
+    <div class="sheet-body" id="tkmListBody"></div>
+  </div>
+</div>
+
+<!-- RECEIVE CONFIRM SHEET -->
+<div class="overlay" id="receiveOverlay" onclick="if(event.target===this)closeOverlay('receiveOverlay')">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+      <div class="sheet-title">&#128229; Confirm Vehicle Receipt</div>
+      <button class="sheet-close" onclick="closeOverlay('receiveOverlay')">&#10005;</button>
+    </div>
+    <div class="sheet-body">
+      <div class="v-hero" id="rcvCard" style="margin-bottom:14px"></div>
+      <div class="input-group"><label class="input-label">Driver Name *</label><input class="input-field" id="rcvDriver" type="text" placeholder="Who delivered it?"></div>
+      <div class="input-group"><label class="input-label">Condition / Remarks</label><input class="input-field" id="rcvCondition" type="text" placeholder="Any damage or remarks?"></div>
+      <div class="alert alert-err" id="rcvErr"></div>
+      <button class="btn btn-green" onclick="confirmReceive()">&#9989; Confirm Received</button>
+    </div>
+  </div>
+</div>
+
+<!-- STAFF PANEL (owner only) -->
+<div class="overlay" id="staffOverlay" onclick="if(event.target===this)closeOverlay('staffOverlay')" style="z-index:600">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+      <div class="sheet-title">&#128101; Staff Management</div>
+      <button class="sheet-close" onclick="closeOverlay('staffOverlay')">&#10005;</button>
+    </div>
+    <div class="sheet-body">
+      <div class="card" style="margin-bottom:14px">
+        <div class="card-title" id="sfTitle">Add Staff</div>
+        <div class="input-group"><label class="input-label">Full Name *</label><input class="input-field" id="sfName" type="text" placeholder="e.g. Ashok Yadav"></div>
+        <div class="input-group">
+          <label class="input-label">Role *</label>
+          <select class="input-field" id="sfRole">
+            <option value="">— Select Role —</option>
+            <option>Owner</option><option>Sales Manager</option>
+            <option>Service Manager</option><option>EDP</option>
+            <option>Sales Team Leader</option><option>Yard Staff</option>
+          </select>
+        </div>
+        <div class="input-group"><label class="input-label" id="sfPinLabel">PIN *</label><input class="input-field" id="sfPin" type="tel" maxlength="4" placeholder="4-digit PIN" oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,4)"></div>
+        <input type="hidden" id="sfRow">
+        <div class="alert alert-err" id="sfErr"></div>
+        <div class="alert alert-ok" id="sfOk"></div>
+        <div class="btn-row">
+          <button class="btn btn-green" style="flex:2" onclick="saveStaff()">&#9989; Save</button>
+          <button class="btn btn-gray" style="flex:1" onclick="resetSfForm()">Clear</button>
+        </div>
+      </div>
+      <div class="card-title">Current Staff</div>
+      <div id="staffList"><div class="empty"><div class="empty-text">Loading...</div></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- PROFILE OVERLAY -->
+<div class="overlay" id="profileOverlay" onclick="if(event.target===this)closeOverlay('profileOverlay')" style="z-index:800">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+      <div>
+        <div class="sheet-title" id="profileName"></div>
+        <div class="sheet-sub" id="profileRoleText"></div>
+      </div>
+      <button class="sheet-close" onclick="closeOverlay('profileOverlay')">&#10005;</button>
+    </div>
+    <div class="sheet-body">
+      <div id="profileStaffLink" class="hidden" style="display:flex;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid var(--gray-100);cursor:pointer" onclick="closeOverlay('profileOverlay');openStaff()">
+        <span style="font-size:20px">&#128101;</span><span style="font-size:14px;font-weight:600">Manage Staff</span>
+      </div>
+      <div id="profileAuditLink" class="hidden" style="display:flex;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid var(--gray-100);cursor:pointer" onclick="closeOverlay('profileOverlay');openAuditSetup()">
+        <span style="font-size:20px">&#128269;</span><span style="font-size:14px;font-weight:600">Stock Audit</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid var(--gray-100);cursor:pointer" onclick="closeOverlay('profileOverlay');openChangePIN()">
+        <span style="font-size:20px">&#128273;</span><span style="font-size:14px;font-weight:600">Change My PIN</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;padding:14px 0;cursor:pointer" onclick="doLogout()">
+        <span style="font-size:20px">&#8617;</span><span style="font-size:14px;font-weight:600">Logout</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CHANGE PIN OVERLAY -->
+<div class="overlay" id="changePinOverlay" onclick="if(event.target===this)closeOverlay('changePinOverlay')">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+      <div class="sheet-title">&#128273; Change PIN</div>
+      <button class="sheet-close" onclick="closeOverlay('changePinOverlay')">&#10005;</button>
+    </div>
+    <div class="sheet-body">
+      <div class="input-group"><label class="input-label">Current PIN *</label><input class="input-field" id="cpOld" type="tel" maxlength="4" placeholder="Current 4-digit PIN" oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,4)"></div>
+      <div class="input-group"><label class="input-label">New PIN *</label><input class="input-field" id="cpNew" type="tel" maxlength="4" placeholder="New 4-digit PIN" oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,4)"></div>
+      <div class="input-group"><label class="input-label">Confirm New PIN *</label><input class="input-field" id="cpCnf" type="tel" maxlength="4" placeholder="Repeat new PIN" oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,4)"></div>
+      <div class="alert alert-err" id="cpErr"></div>
+      <div class="alert alert-ok" id="cpOk"></div>
+      <button class="btn btn-dark" onclick="confirmChangePIN()">&#128273; Update PIN</button>
+    </div>
+  </div>
+</div>
+
+<!-- TRAILER SCREEN -->
+<div id="trailerScreen">
+  <div class="ts-header">
+    <button class="ts-back" onclick="trailerBack()">&#8592;</button>
+    <div class="ts-title">&#128667; Bulk Trailer Arrival</div>
+  </div>
+  <div class="ts-body" id="tsBody">
+    <div class="step-bar">
+      <div class="step-node"><div class="step-circle active" id="tsN1">1</div><div class="step-lbl active" id="tsL1">Trailer</div></div>
+      <div class="step-line" id="tsLine1"></div>
+      <div class="step-node"><div class="step-circle" id="tsN2">2</div><div class="step-lbl" id="tsL2">Vehicles</div></div>
+      <div class="step-line" id="tsLine2"></div>
+      <div class="step-node"><div class="step-circle" id="tsN3">3</div><div class="step-lbl" id="tsL3">Confirm</div></div>
+    </div>
+    <!-- Step 1 -->
+    <div id="tsS1">
+      <div class="card">
+        <div class="card-title">Trailer Details</div>
+        <div class="input-group">
+          <label class="input-label">Source *</label>
+          <div class="src-row">
+            <div class="src-btn active" id="tsSrcTKM" onclick="tsSetSrc('TKM')">TKM</div>
+            <div class="src-btn" id="tsSrcCD" onclick="tsSetSrc('Co-Dealer')">Co-Dealer</div>
+          </div>
+          <input class="input-field hidden" id="tsCoDlr" type="text" placeholder="Co-dealer name">
+        </div>
+        <div class="input-group"><label class="input-label">Trailer No. *</label><input class="input-field" id="tsTrailerNo" type="text" placeholder="e.g. HR 55 AA 1234" oninput="this.value=this.value.toUpperCase()"></div>
+        <div class="input-group"><label class="input-label">Transporter *</label><input class="input-field" id="tsTransporter" type="text" placeholder="e.g. TCI, VRL Logistics"></div>
+        <div class="input-group"><label class="input-label">Driver Name *</label><input class="input-field" id="tsDriverName" type="text" placeholder="Driver full name"></div>
+        <div class="input-group"><label class="input-label">Driver Mobile *</label><input class="input-field" id="tsDriverMob" type="tel" maxlength="10" placeholder="10-digit number" oninput="this.value=this.value.replace(/[^0-9]/g,'')"></div>
+        <div class="input-group"><label class="input-label">Reporting Date &amp; Time *</label><input class="input-field" id="tsDateTime" type="datetime-local"></div>
+        <div class="input-group">
+          <label class="input-label">Received At *</label>
+          <div class="loc-grid">
+            <div class="loc-tile active" id="tsL_Stockyard" onclick="tsSetLoc(this,'Stockyard')"><div class="loc-tile-icon">&#128338;</div><div class="loc-tile-name">Stockyard</div></div>
+            <div class="loc-tile" id="tsL_Workshop" onclick="tsSetLoc(this,'Workshop')"><div class="loc-tile-icon">&#128295;</div><div class="loc-tile-name">Workshop</div></div>
+            <div class="loc-tile" id="tsL_Showroom" onclick="tsSetLoc(this,'Showroom')"><div class="loc-tile-icon">&#127970;</div><div class="loc-tile-name">Showroom</div></div>
+          </div>
+        </div>
+        <div class="input-group"><label class="input-label">Remarks</label><input class="input-field" id="tsRemarks" type="text" placeholder="Optional"></div>
+        <div class="alert alert-err" id="tsS1Err"></div>
+      </div>
+    </div>
+    <!-- Step 2 -->
+    <div id="tsS2" class="hidden">
+      <div class="card" id="tsSummaryBanner" style="background:#064E3B;color:white;border-color:#064E3B"></div>
+      <div id="tsVehicleList"></div>
+      <div class="card">
+        <div class="card-title" id="tsAddTitle">Add Vehicle #1</div>
+        <div class="input-group"><label class="input-label">Chassis *</label>
+          <div style="display:flex;gap:8px">
+            <input class="input-field" id="tvChassis" type="text" placeholder="Chassis number" style="text-transform:uppercase;letter-spacing:1px;flex:1" oninput="this.value=this.value.toUpperCase()">
+            <button class="btn-icon" style="background:var(--dark);width:44px;height:44px;border-radius:var(--r-sm);flex-shrink:0" onclick="openScanner(\'tvChassis\')">📷</button>
+          </div>
+        </div>
+        <div class="input-group"><label class="input-label">Model *</label><select class="input-field" id="tvModel" onchange="tvDD('Variant')"><option value="">— Select Model —</option></select></div>
+        <div class="input-group"><label class="input-label">Variant *</label><select class="input-field" id="tvVariant" onchange="tvDD('Fuel')"><option value="">—</option></select></div>
+        <div class="input-group"><label class="input-label">Fuel *</label><select class="input-field" id="tvFuel" onchange="tvDD('Colour')"><option value="">—</option></select></div>
+        <div class="input-group"><label class="input-label">Colour *</label><select class="input-field" id="tvColour" onchange="tvDD('Interior')"><option value="">—</option></select></div>
+        <div class="input-group"><label class="input-label">Interior *</label><select class="input-field" id="tvInterior" onchange="tvDD('Suffix')"><option value="">—</option></select></div>
+        <div class="input-group"><label class="input-label">Suffix (auto)</label><input class="input-field ok" id="tvSuffix" readonly></div>
+        <div class="input-group"><label class="input-label">Dispatch Date</label><input class="input-field" id="tvDispatch" type="date"></div>
+        <div class="input-group"><label class="input-label">Remarks</label><input class="input-field" id="tvRemarks" type="text" placeholder="Damage, condition..."></div>
+        <div class="alert alert-err" id="tvErr"></div>
+        <button class="btn btn-green" onclick="addTrailerVehicle()">&#43; Add Vehicle</button>
+      </div>
+      <div class="alert alert-err" id="tsS2Err"></div>
+    </div>
+    <!-- Step 3 -->
+    <div id="tsS3" class="hidden">
+      <div class="card" id="tsFinalBanner" style="background:#064E3B;color:white;border-color:#064E3B"></div>
+      <div class="card" id="tsFinalList"></div>
+      <div class="alert alert-err" id="tsS3Err"></div>
+    </div>
+  </div>
+  <div class="ts-footer">
+    <button class="btn btn-gray" id="tsBtnBack" style="flex:1" onclick="trailerBack()">Cancel</button>
+    <button class="btn btn-green" id="tsBtnNext" style="flex:2" onclick="trailerNext()">Next &#8594;</button>
+  </div>
+</div>
+
+<!-- LOADER -->
+<div id="loader"><div class="loader-box"><div class="spinner"></div><div class="loader-text" id="loaderText">Loading...</div></div></div>
+
+<!-- SUCCESS SCREEN -->
+<div class="success-overlay" id="successScreen">
+  <div class="success-box">
+    <div class="success-icon" id="suIcon"></div>
+    <div class="success-title" id="suTitle"></div>
+    <div class="success-msg" id="suMsg"></div>
+    <div class="success-detail" id="suDetail"></div>
+    <button class="btn btn-dark" onclick="closeSuccess()">Done</button>
+  </div>
+</div>
+
+</div><!-- /app -->
+
+<script>
+'use strict';
+// ═══════════════════════════════════════════════════════
+// CONFIG
+// ═══════════════════════════════════════════════════════
+var API = 'https://script.google.com/macros/s/AKfycbw4dxUdwEqW34B-ehGK1sJMPVaLTNH2FvXmVgT1wT92OdAudsSQkRLT7Bvbt8UQvVk8HA/exec';
+
+// ═══════════════════════════════════════════════════════
+// GLOBAL STATE — declared once, never duplicated
+// ═══════════════════════════════════════════════════════
+var currentUser  = null;
+var allStock     = [];
+var suffixes     = [];
+var activeTab    = '';
+var stockFilter  = 'ALL';
+var activeV      = null;      // vehicle being acted on
+var drillStore   = {};        // safe key → {vehicles,colour,variant,fuel}
+var rcvChassis   = '';        // chassis being received
+var recentMoves  = [];        // local cache of recent dispatches
+// Gate-entry state
+var GE = { src:'TKM', loc:'Stockyard' };
+// Trailer state
+var TS = { step:1, src:'TKM', loc:'Stockyard', details:{}, vehicles:[] };
+// Audit state
+var AU = { scope:'ALL', items:[], filter:'ALL', auditor:'', startedAt:'' };
+
+// ═══════════════════════════════════════════════════════
+// PERMISSIONS
+// ═══════════════════════════════════════════════════════
+function role() { return currentUser ? currentUser.role.toLowerCase().trim() : ''; }
+function canLogMovement()    { return ['owner','sales manager','service manager','yard staff'].includes(role()); }
+function canSeeDashboard()   { return role() !== 'yard staff'; }
+function canAllocate()       { return ['owner','sales manager','sales team leader'].includes(role()); }
+function canSeeAllocation()  { return ['owner','sales manager','edp','sales team leader'].includes(role()); }
+function canEnterTKMBilled() { return ['owner','sales manager','edp'].includes(role()); }
+function canManageStaff()    { return role() === 'owner'; }
+function canMoveVehicle()    { return ['owner','sales manager','service manager'].includes(role()); }
+function canSeeDailySummary(){ return ['owner','sales manager'].includes(role()); }
+function canAudit()          { return ['owner','sales manager','service manager','yard staff'].includes(role()); }
+
+// ═══════════════════════════════════════════════════════
+// UTILITIES
+// ═══════════════════════════════════════════════════════
+function showLoader(msg) {
+  document.getElementById('loaderText').textContent = msg || 'Loading...';
+  document.getElementById('loader').classList.add('show');
+}
+function hideLoader() { document.getElementById('loader').classList.remove('show'); }
+
+function showAlert(id, msg) {
+  var el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = msg;
+  el.classList.add('show');
+}
+function hideAlert(id) {
+  var el = document.getElementById(id);
+  if (el) el.classList.remove('show');
+}
+
+function openOverlay(id)  { document.getElementById(id).classList.add('open'); }
+function closeOverlay(id) { document.getElementById(id).classList.remove('open'); }
+
+function showSuccess(icon, title, msg, rows) {
+  document.getElementById('suIcon').textContent  = icon;
+  document.getElementById('suTitle').textContent = title;
+  document.getElementById('suMsg').textContent   = msg;
+  var det = '';
+  (rows || []).forEach(function(r) {
+    det += '<div class="sd-row"><span class="sd-key">' + r.k + '</span><span class="sd-val">' + r.v + '</span></div>';
+  });
+  document.getElementById('suDetail').innerHTML = det;
+  openOverlay('successScreen');
+}
+function closeSuccess() { closeOverlay('successScreen'); }
+
+function locPillHtml(loc) {
+  var cls = 'pill-yard';
+  if (loc === 'Workshop')   cls = 'pill-workshop';
+  if (loc === 'Showroom')   cls = 'pill-showroom';
+  if (loc === 'In Transit') cls = 'pill-transit';
+  if (loc === 'TKM Billed') cls = 'pill-tkm';
+  return '<span class="pill ' + cls + '">' + (loc || 'Unknown') + '</span>';
+}
+
+function daysColor(d) {
+  d = parseInt(d) || 0;
+  if (d >= 45) return 'var(--red)';
+  if (d >= 30) return 'var(--transit)';
+  if (d >= 15) return 'var(--amber)';
+  return 'var(--green)';
+}
+
+function emptyHtml(icon, text, sub) {
+  return '<div class="empty"><div class="empty-icon">' + (icon||'') + '</div>'
+       + '<div class="empty-text">' + text + '</div>'
+       + (sub ? '<div class="empty-sub">' + sub + '</div>' : '') + '</div>';
+}
+
+function today() { return new Date().toISOString().split('T')[0]; }
+function nowISO() { return new Date().toISOString(); }
+
+async function callAPI(payload) {
+  var res  = await fetch(API, { method:'POST', headers:{'Content-Type':'text/plain'}, body:JSON.stringify(payload) });
+  var text = await res.text();
+  try { return JSON.parse(text); }
+  catch(e) { console.error('callAPI parse fail. Raw:', text.substring(0,300)); throw new Error('Server returned invalid response'); }
+}
+
+async function callGET(params) {
+  var qs  = Object.keys(params).map(function(k) { return encodeURIComponent(k) + '=' + encodeURIComponent(params[k]); }).join('&');
+  var res = await fetch(API + '?' + qs);
+  var txt = await res.text();
+  try { return JSON.parse(txt); }
+  catch(e) { throw new Error('Server error'); }
+}
+
+// ═══════════════════════════════════════════════════════
+// QR / BARCODE SCANNER (ZXing)
+// ═══════════════════════════════════════════════════════
+var scannerTargetField = '';
+var scannerCodeReader  = null;
+var scannerActive      = false;
+
+function openScanner(targetFieldId) {
+  scannerTargetField = targetFieldId;
+  scannerActive = true;
+  document.getElementById('scannerStatus').textContent = 'Starting camera...';
+  openOverlay('scannerOverlay');
+
+  if (typeof ZXing === 'undefined') {
+    document.getElementById('scannerStatus').textContent = '⚠️ Scanner library failed to load. Enter chassis manually.';
+    return;
+  }
+
+  try {
+    scannerCodeReader = new ZXing.BrowserMultiFormatReader();
+    scannerCodeReader.listVideoInputDevices().then(function(devices) {
+      if (!devices.length) {
+        document.getElementById('scannerStatus').textContent = '⚠️ No camera found.';
+        return;
+      }
+      // Prefer back/rear camera
+      var deviceId = devices[0].deviceId;
+      var backCam = devices.find(function(d) { return /back|rear|environment/i.test(d.label); });
+      if (backCam) deviceId = backCam.deviceId;
+
+      scannerCodeReader.decodeFromVideoDevice(deviceId, 'scannerVideo', function(result, err) {
+        if (!scannerActive) return;
+        if (result) {
+          var text = result.getText().trim().toUpperCase();
+          handleScanResult(text);
+        }
+      });
+      document.getElementById('scannerStatus').textContent = 'Point camera at chassis QR / barcode';
+    }).catch(function(e) {
+      document.getElementById('scannerStatus').textContent = '⚠️ Camera access denied or unavailable.';
+      console.error('Scanner camera error:', e);
+    });
+  } catch(e) {
+    document.getElementById('scannerStatus').textContent = '⚠️ Scanner error: ' + e.message;
+    console.error('Scanner init error:', e);
+  }
+}
+
+function handleScanResult(text) {
+  scannerActive = false;
+  closeScanner();
+
+  if (scannerTargetField === 'receiveScanTarget') {
+    // Find matching transit card and open receive modal directly
+    var v = allStock.find(function(x) { return x.chassis === text || (x.chassis||'').includes(text); });
+    if (v && v.status === 'In Transit') {
+      openReceive(v.chassis);
+    } else {
+      // Try fallback: search all chassis-like substrings
+      var match = allStock.find(function(x) { return text.includes(x.chassis); });
+      if (match && match.status === 'In Transit') {
+        openReceive(match.chassis);
+      } else {
+        alert('Scanned: ' + text + '\n\nNo matching vehicle found in transit. Please check the chassis number and use Confirm Receipt manually if needed.');
+      }
+    }
+    return;
+  }
+
+  if (scannerTargetField === 'auditScanTarget') {
+    tickAuditChassis(text);
+    return;
+  }
+
+  // Default: fill the target input field
+  var el = document.getElementById(scannerTargetField);
+  if (el) {
+    el.value = text;
+    // Trigger any oninput handlers (uppercase formatting etc.)
+    el.dispatchEvent(new Event('input', { bubbles:true }));
+  }
+}
+
+function closeScanner() {
+  scannerActive = false;
+  closeOverlay('scannerOverlay');
+  if (scannerCodeReader) {
+    try { scannerCodeReader.reset(); } catch(e) {}
+    scannerCodeReader = null;
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// PIN SYSTEM
+// ═══════════════════════════════════════════════════════
+var PIN = (function() {
+  var buf = '';
+  function updateDots() {
+    for (var i = 0; i < 4; i++) {
+      var el = document.getElementById('d' + i);
+      if (el) el.className = 'pin-dot' + (i < buf.length ? ' filled' : '');
+    }
+    if (buf.length === 4) doAttempt();
+  }
+  async function doAttempt() {
+    var name = document.getElementById('nameSelect').value;
+    if (!name) { document.getElementById('pinErr').textContent = 'Select your name first.'; buf = ''; updateDots(); return; }
+    document.getElementById('pinErr').textContent = '';
+    try {
+      var data = await callGET({ action:'verifyPin', name:name, pin:buf });
+      buf = ''; updateDots();
+      if (data.success && data.authenticated) {
+        currentUser = { name:data.staffName || name, role:data.role, loginTime:Date.now() };
+        localStorage.setItem('pt_session', JSON.stringify(currentUser));
+        bootApp();
+      } else {
+        document.getElementById('pinErr').textContent = data.error || 'Incorrect PIN. Try again.';
+      }
+    } catch(e) {
+      buf = ''; updateDots();
+      document.getElementById('pinErr').textContent = 'Connection error. Check internet.';
+    }
+  }
+  return {
+    key:   function(k) { if (buf.length < 4) { buf += String(k); updateDots(); } },
+    del:   function()  { buf = buf.slice(0, -1); updateDots(); },
+    clear: function()  { buf = ''; updateDots(); }
+  };
+})();
+
+async function loadStaffNames() {
+  try {
+    var data = await callGET({ action:'getStaffList' });
+    if (data.success && data.staff) {
+      var active = data.staff.filter(function(s) { return (s.status || '').toLowerCase() === 'active'; });
+      var sel = document.getElementById('nameSelect');
+      sel.innerHTML = '<option value="">— Select your name —</option>';
+      active.forEach(function(s) {
+        var o = document.createElement('option');
+        o.value = s.name; o.textContent = s.name;
+        sel.appendChild(o);
+      });
+    }
+  } catch(e) { console.warn('loadStaffNames failed'); }
+}
+
+// ═══════════════════════════════════════════════════════
+// BOOT / LOGOUT
+// ═══════════════════════════════════════════════════════
+function bootApp() {
+  document.getElementById('loginScreen').style.display  = 'none';
+  document.getElementById('mainHeader').style.display   = 'flex';
+  document.getElementById('mainContent').style.display  = 'block';
+  document.getElementById('bottomNav').style.display    = 'flex';
+
+  document.getElementById('hdrName').textContent = currentUser.name;
+  var rp = document.getElementById('hdrRole');
+  rp.textContent = currentUser.role;
+  rp.className   = 'role-pill role-' + currentUser.role.toLowerCase().replace(/\s+/g, '-');
+
+  // Show/hide nav buttons
+  setVisible('navDash',    canSeeDashboard());
+  setVisible('navLog',     canLogMovement());
+  setVisible('navReceive', canLogMovement());
+  setVisible('navStock',   canSeeDashboard());
+  setVisible('navDaily',   canSeeDailySummary());
+  setVisible('btnTkmBill', canEnterTKMBilled());
+
+  // Debug bar — 8 seconds
+  var db = document.getElementById('debugBar');
+  db.textContent = 'Role: ' + role() + ' | Dashboard:' + canSeeDashboard() + ' Move:' + canLogMovement() + ' Alloc:' + canAllocate() + ' TKM:' + canEnterTKMBilled();
+  db.style.display = 'block';
+  setTimeout(function() { db.style.display = 'none'; }, 8000);
+
+  // Load data
+  loadSuffixes();
+  loadAllStock();
+  renderRecentMoves();
+
+  // Default tab
+  if (canSeeDashboard()) switchTab('Dash');
+  else                   switchTab('Log');
+}
+
+function setVisible(id, show) {
+  var el = document.getElementById(id);
+  if (!el) return;
+  if (show) el.classList.remove('hidden');
+  else      el.classList.add('hidden');
+}
+
+function doLogout() {
+  if (!confirm('Logout?')) return;
+  localStorage.removeItem('pt_session');
+  location.reload();
+}
+
+// ═══════════════════════════════════════════════════════
+// TAB SWITCHING
+// ═══════════════════════════════════════════════════════
+function switchTab(name) {
+  activeTab = name;
+  ['Dash','Log','Receive','Stock','Daily'].forEach(function(t) {
+    var tab = document.getElementById('tab' + t);
+    var btn = document.getElementById('nav' + t);
+    if (tab) tab.className = 'tab' + (t === name ? ' active' : '');
+    if (btn) {
+      btn.className = btn.className.replace(' active','');
+      if (t === name) btn.className += ' active';
+    }
+  });
+  if (name === 'Dash')    loadDashboard();
+  if (name === 'Receive') loadPendingTransits();
+  if (name === 'Stock')   renderStock();
+  if (name === 'Daily')   { if (!document.getElementById('dailyDate').value) setDailyToday(); else loadDailySummary(); }
+}
+
+// ═══════════════════════════════════════════════════════
+// SUFFIX / DROPDOWNS
+// ═══════════════════════════════════════════════════════
+async function loadSuffixes() {
+  try {
+    var d = await callGET({ action:'getSuffixData' });
+    if (d.success) suffixes = d.suffixes || [];
+  } catch(e) {}
+}
+
+function populateDD(id, opts, placeholder) {
+  var el = document.getElementById(id);
+  if (!el) return;
+  el.innerHTML = '<option value="">' + placeholder + '</option>'
+    + opts.map(function(o) { return '<option>' + o + '</option>'; }).join('');
+}
+
+function getOpts(fn, key) {
+  return [...new Set(suffixes.filter(fn).map(function(r) { return r[key] || '(None)'; }))].sort();
+}
+
+function findSuffix(m, v, f, c, i) {
+  return suffixes.find(function(r) {
+    return r.model === m && r.variant === v && r.fuel === f && r.colour === c
+        && (r.interior === i || (!r.interior && i === '(None)'));
+  });
+}
+
+function setSuffixField(inputId, match) {
+  var el = document.getElementById(inputId);
+  if (!el) return;
+  el.value     = match ? match.suffix : '— Not matched —';
+  el.className = 'input-field ' + (match ? 'ok' : 'err');
+}
+
+// Gate entry cascades
+function geDD(next) {
+  var m = document.getElementById('geModel').value;
+  var v = document.getElementById('geVariant').value;
+  var f = document.getElementById('geFuel').value;
+  var c = document.getElementById('geColour').value;
+  var i = document.getElementById('geInterior').value;
+  if (next === 'Variant')  { populateDD('geVariant',  getOpts(function(r){return r.model===m;},'variant'),'— Variant —'); populateDD('geFuel',[],'—'); populateDD('geColour',[],'—'); populateDD('geInterior',[],'—'); setSuffixField('geSuffix',null); }
+  if (next === 'Fuel')     { populateDD('geFuel',     getOpts(function(r){return r.model===m&&r.variant===v;},'fuel'),'— Fuel —'); populateDD('geColour',[],'—'); populateDD('geInterior',[],'—'); setSuffixField('geSuffix',null); }
+  if (next === 'Colour')   { populateDD('geColour',   getOpts(function(r){return r.model===m&&r.variant===v&&r.fuel===f;},'colour'),'— Colour —'); populateDD('geInterior',[],'—'); setSuffixField('geSuffix',null); }
+  if (next === 'Interior') { populateDD('geInterior', getOpts(function(r){return r.model===m&&r.variant===v&&r.fuel===f&&r.colour===c;},'interior'),'— Interior —'); setSuffixField('geSuffix',null); }
+  if (next === 'Suffix')   { setSuffixField('geSuffix', findSuffix(m,v,f,c,i)); }
+}
+
+// TKM Billed cascades
+function tbDD(next) {
+  var m = document.getElementById('tbModel').value;
+  var v = document.getElementById('tbVariant').value;
+  var f = document.getElementById('tbFuel').value;
+  var c = document.getElementById('tbColour').value;
+  var i = document.getElementById('tbInterior').value;
+  if (next === 'Variant')  { populateDD('tbVariant',  getOpts(function(r){return r.model===m;},'variant'),'— Variant —'); populateDD('tbFuel',[],'—'); populateDD('tbColour',[],'—'); populateDD('tbInterior',[],'—'); setSuffixField('tbSuffix',null); }
+  if (next === 'Fuel')     { populateDD('tbFuel',     getOpts(function(r){return r.model===m&&r.variant===v;},'fuel'),'— Fuel —'); populateDD('tbColour',[],'—'); populateDD('tbInterior',[],'—'); setSuffixField('tbSuffix',null); }
+  if (next === 'Colour')   { populateDD('tbColour',   getOpts(function(r){return r.model===m&&r.variant===v&&r.fuel===f;},'colour'),'— Colour —'); populateDD('tbInterior',[],'—'); setSuffixField('tbSuffix',null); }
+  if (next === 'Interior') { populateDD('tbInterior', getOpts(function(r){return r.model===m&&r.variant===v&&r.fuel===f&&r.colour===c;},'interior'),'— Interior —'); setSuffixField('tbSuffix',null); }
+  if (next === 'Suffix')   { setSuffixField('tbSuffix', findSuffix(m,v,f,c,i)); }
+}
+
+// Trailer vehicle cascades
+function tvDD(next) {
+  var m = document.getElementById('tvModel').value;
+  var v = document.getElementById('tvVariant').value;
+  var f = document.getElementById('tvFuel').value;
+  var c = document.getElementById('tvColour').value;
+  var i = document.getElementById('tvInterior').value;
+  if (next === 'Variant')  { populateDD('tvVariant',  getOpts(function(r){return r.model===m;},'variant'),'— Variant —'); populateDD('tvFuel',[],'—'); populateDD('tvColour',[],'—'); populateDD('tvInterior',[],'—'); setSuffixField('tvSuffix',null); }
+  if (next === 'Fuel')     { populateDD('tvFuel',     getOpts(function(r){return r.model===m&&r.variant===v;},'fuel'),'— Fuel —'); populateDD('tvColour',[],'—'); populateDD('tvInterior',[],'—'); setSuffixField('tvSuffix',null); }
+  if (next === 'Colour')   { populateDD('tvColour',   getOpts(function(r){return r.model===m&&r.variant===v&&r.fuel===f;},'colour'),'— Colour —'); populateDD('tvInterior',[],'—'); setSuffixField('tvSuffix',null); }
+  if (next === 'Interior') { populateDD('tvInterior', getOpts(function(r){return r.model===m&&r.variant===v&&r.fuel===f&&r.colour===c;},'interior'),'— Interior —'); setSuffixField('tvSuffix',null); }
+  if (next === 'Suffix')   { setSuffixField('tvSuffix', findSuffix(m,v,f,c,i)); }
+}
+
+function populateModelDD(prefix) {
+  if (!suffixes.length) return;
+  var models = [...new Set(suffixes.map(function(r){return r.model;}))].sort();
+  populateDD(prefix + 'Model', models, '— Select Model —');
+}
+
+// ═══════════════════════════════════════════════════════
+// DASHBOARD
+// ═══════════════════════════════════════════════════════
+async function loadDashboard() {
+  document.getElementById('dashContent').innerHTML = emptyHtml('🔄','Loading dashboard...','');
+  try {
+    var d = await callGET({ action:'getDashboard' });
+    console.log('getDashboard response:', d);
+    if (!d || !d.success) {
+      document.getElementById('dashContent').innerHTML =
+        emptyHtml('⚠️','Failed to load', (d && d.error) ? d.error : 'Server returned no data')
+        + '<div style="text-align:center;margin-top:8px"><button class="btn btn-gray btn-sm" style="width:auto;display:inline-flex" onclick="loadDashboard()">🔄 Retry</button></div>';
+      return;
+    }
+    renderDashboard(d);
+  } catch(e) {
+    console.error('loadDashboard error:', e);
+    document.getElementById('dashContent').innerHTML =
+      emptyHtml('⚠️','Connection error', e.message || 'Check internet and try again')
+      + '<div style="text-align:center;margin-top:8px"><button class="btn btn-gray btn-sm" style="width:auto;display:inline-flex" onclick="loadDashboard()">🔄 Retry</button></div>';
+  }
+}
+
+function renderDashboard(d) {
+  var total  = d.total || 0;
+  var models = d.models || [];
+  var maxC   = models.length ? Math.max.apply(null, models.map(function(m){return m.count;})) : 1;
+
+  var html = '<div class="dash-strip">'
+           + '<div class="dash-total">' + total + '</div>'
+           + '<div class="dash-total-label">Total Vehicles in Stock</div>'
+           + '</div>';
+
+  html += '<div class="stat-grid">';
+  html += makeStatCard('stat-yard',    d.stockyard||0, '&#128338; Stockyard',    "openLocDrill('Stockyard')");
+  html += makeStatCard('stat-workshop', d.workshop||0, '&#128295; Workshop',     "openLocDrill('Workshop')");
+  html += makeStatCard('stat-showroom', d.showroom||0, '&#127970; Showroom',     "openLocDrill('Showroom')");
+  html += makeStatCard('stat-transit',  d.transit||0,  '&#128667; In Transit',   "openLocDrill('In Transit')");
+  html += '</div>';
+
+  if (d.tkmBilled !== undefined) {
+    html += '<div class="stat-card stat-tkm" onclick="openTkmList()" style="margin-bottom:12px;cursor:pointer">'
+          + '<div class="stat-num">' + (d.tkmBilled||0) + '</div>'
+          + '<div class="stat-label">&#128203; TKM Billed — Not Yet Arrived</div>'
+          + '</div>';
+  }
+
+  html += '<div class="card"><div class="card-title">Model-wise Stock</div>';
+  if (models.length) {
+    models.forEach(function(m, i) {
+      var pct = maxC > 0 ? Math.round(m.count / maxC * 100) : 0;
+      html += '<div class="model-row" onclick="openModelDrill(\'' + m.model.replace(/'/g, "\\'") + '\')">'
+            + '<div class="model-rank">' + (i+1) + '</div>'
+            + '<div class="model-info">'
+            + '<div class="model-name">' + m.model + '</div>'
+            + '<div class="model-bar-wrap"><div class="model-bar" style="width:' + pct + '%"></div></div>'
+            + '</div>'
+            + '<div style="display:flex;align-items:center;gap:6px;flex-shrink:0">'
+            + '<div class="model-count">' + m.count + '</div>'
+            + '<span style="font-size:14px;color:var(--gray-300)">&#8250;</span>'
+            + '</div></div>';
+    });
+  } else {
+    html += emptyHtml('', 'No stock data', '');
+  }
+  html += '</div>';
+  document.getElementById('dashContent').innerHTML = html;
+}
+
+function makeStatCard(cls, num, label, clickFn) {
+  return '<div class="stat-card ' + cls + '" onclick="' + clickFn + '" style="cursor:pointer">'
+       + '<div class="stat-num">' + num + '</div>'
+       + '<div class="stat-label">' + label + '</div>'
+       + '</div>';
+}
+
+// ═══════════════════════════════════════════════════════
+// DAILY STOCK SUMMARY (Owner / Sales Manager only)
+// ═══════════════════════════════════════════════════════
+function setDailyToday() {
+  document.getElementById('dailyDate').value = today();
+  loadDailySummary();
+}
+
+async function loadDailySummary() {
+  var dateVal = document.getElementById('dailyDate').value || today();
+  var el = document.getElementById('dailyContent');
+  el.innerHTML = emptyHtml('🔄','Loading summary for ' + dateVal + '...','');
+  try {
+    var d = await callGET({ action:'getDailySummary', date:dateVal });
+    console.log('getDailySummary response:', d);
+    if (!d || !d.success) {
+      el.innerHTML = emptyHtml('⚠️','Failed to load', (d && d.error) ? d.error : 'Server returned no data')
+        + '<div style="text-align:center;margin-top:8px"><button class="btn btn-gray btn-sm" style="width:auto;display:inline-flex" onclick="loadDailySummary()">🔄 Retry</button></div>';
+      return;
+    }
+    renderDailySummary(d, dateVal);
+  } catch(e) {
+    console.error('loadDailySummary error:', e);
+    el.innerHTML = emptyHtml('⚠️','Connection error', e.message || 'Check internet and try again')
+      + '<div style="text-align:center;margin-top:8px"><button class="btn btn-gray btn-sm" style="width:auto;display:inline-flex" onclick="loadDailySummary()">🔄 Retry</button></div>';
+  }
+}
+
+function renderDailySummary(d, dateVal) {
+  var dateLabel = new Date(dateVal + 'T00:00:00').toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric', weekday:'short' });
+
+  var html = '<div class="card" style="background:linear-gradient(135deg,var(--dark),var(--navy));border:none">'
+    + '<div style="color:white;font-size:13px;opacity:0.6;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:2px">' + dateLabel + '</div>'
+    + '<div style="color:white;font-size:11px;opacity:0.4">Dealership Stock Movement Summary</div>'
+    + '</div>';
+
+  // Opening / Inward / Outward / Closing strip
+  html += '<div class="stat-grid">';
+  html += '<div class="stat-card" style="cursor:default"><div class="stat-num" style="color:var(--dark)">' + (d.opening||0) + '</div><div class="stat-label">📦 Opening Stock</div></div>';
+  html += '<div class="stat-card" style="cursor:default"><div class="stat-num" style="color:var(--green)">+' + (d.inward||0) + '</div><div class="stat-label">⬇️ Stock Inward</div></div>';
+  html += '<div class="stat-card" style="cursor:default"><div class="stat-num" style="color:var(--red)">-' + (d.outward||0) + '</div><div class="stat-label">⬆️ Stock Outward</div></div>';
+  html += '<div class="stat-card" style="cursor:default"><div class="stat-num" style="color:var(--blue)">' + (d.closing||0) + '</div><div class="stat-label">🏁 Closing Stock</div></div>';
+  html += '</div>';
+
+  // Inward / Outward detail lists if present
+  if (d.inwardDetails && d.inwardDetails.length) {
+    html += '<div class="card"><div class="card-title">⬇️ Vehicles Received (' + d.inwardDetails.length + ')</div>';
+    d.inwardDetails.forEach(function(v) {
+      html += '<div class="recent-item"><div class="recent-dot" style="background:var(--green)"></div>'
+            + '<div class="recent-info"><div class="recent-chassis">' + v.chassis + '</div>'
+            + '<div class="recent-detail">' + (v.model||'') + ' ' + (v.variant||'') + ' &middot; ' + (v.location||v.to||'') + '</div></div>'
+            + '<div class="recent-time">' + (v.time||'') + '</div></div>';
+    });
+    html += '</div>';
+  }
+  if (d.outwardDetails && d.outwardDetails.length) {
+    html += '<div class="card"><div class="card-title">⬆️ Vehicles Dispatched / Delivered (' + d.outwardDetails.length + ')</div>';
+    d.outwardDetails.forEach(function(v) {
+      html += '<div class="recent-item"><div class="recent-dot" style="background:var(--red)"></div>'
+            + '<div class="recent-info"><div class="recent-chassis">' + v.chassis + '</div>'
+            + '<div class="recent-detail">' + (v.model||'') + ' ' + (v.variant||'') + ' &middot; ' + (v.reason||v.to||'') + '</div></div>'
+            + '<div class="recent-time">' + (v.time||'') + '</div></div>';
+    });
+    html += '</div>';
+  }
+
+  // Model-wise allocated vs free
+  html += '<div class="card"><div class="card-title">Model-wise — Allocated vs Free</div>';
+  var models = d.modelBreakdown || [];
+  if (models.length) {
+    models.forEach(function(m) {
+      var total = (m.allocated||0) + (m.free||0);
+      var allocPct = total > 0 ? Math.round((m.allocated||0) / total * 100) : 0;
+      html += '<div style="padding:10px 0;border-bottom:1px solid var(--gray-100)">'
+            + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">'
+            + '<span style="font-size:13px;font-weight:700;color:var(--dark)">' + m.model + '</span>'
+            + '<span style="font-size:11px;color:var(--gray-400)">' + total + ' total</span>'
+            + '</div>'
+            + '<div style="display:flex;gap:8px;align-items:center">'
+            + '<div style="flex:1;height:8px;background:var(--green-soft);border-radius:4px;overflow:hidden;display:flex">'
+            + '<div style="width:' + allocPct + '%;background:#FEF3C7;height:100%"></div>'
+            + '<div style="flex:1;background:var(--green-soft)"></div>'
+            + '</div>'
+            + '</div>'
+            + '<div style="display:flex;gap:12px;margin-top:5px">'
+            + '<span style="font-size:11px;font-weight:700;color:#92400E">🔖 Allocated: ' + (m.allocated||0) + '</span>'
+            + '<span style="font-size:11px;font-weight:700;color:var(--green)">✅ Free: ' + (m.free||0) + '</span>'
+            + '</div>'
+            + '</div>';
+    });
+  } else {
+    html += emptyHtml('','No model data for this date','');
+  }
+  html += '</div>';
+
+  document.getElementById('dailyContent').innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════════════
+// ALL STOCK
+// ═══════════════════════════════════════════════════════
+async function loadAllStock() {
+  try {
+    var d = await callGET({ action:'getAllStock' });
+    if (d.success) allStock = d.stock || [];
+    if (activeTab === 'Stock') renderStock();
+  } catch(e) {}
+}
+
+// ═══════════════════════════════════════════════════════
+// LOCATION DRILL
+// ═══════════════════════════════════════════════════════
+var LOC_STYLE = {
+  'Stockyard':  { bg:'#ECFDF5', fg:'#065F46' },
+  'Workshop':   { bg:'#EFF6FF', fg:'#1E40AF' },
+  'Showroom':   { bg:'#F5F3FF', fg:'#5B21B6' },
+  'In Transit': { bg:'#FFF7ED', fg:'#C2410C' },
+};
+
+function openLocDrill(loc) {
+  var vehicles = allStock.filter(function(v) {
+    if (v.status === 'Delivered') return false;
+    if (loc === 'In Transit') return v.status === 'In Transit';
+    return v.location === loc && v.status !== 'In Transit';
+  });
+
+  document.getElementById('mdTitle').textContent = loc;
+  document.getElementById('mdSub').textContent   = vehicles.length + ' vehicle' + (vehicles.length !== 1 ? 's' : '');
+
+  if (!vehicles.length) {
+    document.getElementById('mdBody').innerHTML = emptyHtml('✅','No vehicles here','');
+  } else {
+    var html = '';
+    vehicles.sort(function(a,b){ return parseInt(b.days||0)-parseInt(a.days||0); });
+    vehicles.forEach(function(v) {
+      html += buildChassisCard(v, true);
+    });
+    document.getElementById('mdBody').innerHTML = html;
+  }
+  openOverlay('modelDrillOverlay');
+}
+
+function buildChassisCard(v, inDrill) {
+  var loc  = v.status === 'In Transit' ? 'In Transit' : (v.location || 'Unknown');
+  var dc   = daysColor(v.days);
+  var allocBadge = canSeeAllocation()
+    ? (v.allocatedTo && v.allocatedTo.trim()
+        ? '<span class="pill pill-allocated">&#128100; ' + v.allocatedTo + '</span>'
+        : '<span class="pill pill-available">Available</span>')
+    : '';
+  var moveBtn = canMoveVehicle()
+    ? '<button class="act-btn act-move" onclick="' + (inDrill ? 'closeModelDrill();' : '') + 'showVehicle(\'' + v.chassis + '\')">&#128663; Move</button>'
+    : '';
+  var allocBtn = '';
+  if (canAllocate()) {
+    allocBtn = v.allocatedTo && v.allocatedTo.trim()
+      ? '<button class="act-btn act-free" onclick="doDealloc(\'' + v.chassis + '\')">&#10005; Free</button>'
+      : '<button class="act-btn act-alloc" onclick="openAllocFor(\'' + v.chassis + '\')">&#128278; Alloc</button>';
+  }
+  return '<div class="chassis-row">'
+    + '<div style="display:flex;justify-content:space-between;align-items:flex-start">'
+    + '<div class="cr-model">' + v.model + ' ' + v.variant + ' <span class="cr-suffix">' + (v.suffix||'') + '</span></div>'
+    + '<span class="cr-days" style="color:' + dc + '">' + (v.days||0) + 'd</span>'
+    + '</div>'
+    + '<div class="cr-chassis">' + v.chassis + '</div>'
+    + '<div class="cr-row">' + locPillHtml(loc) + ' ' + allocBadge + '</div>'
+    + '<div style="font-size:11px;color:var(--gray-400);margin-top:3px">' + (v.colour||'') + (v.fuel?' &middot; '+v.fuel:'') + '</div>'
+    + '<div class="cr-actions">' + moveBtn + allocBtn + '</div>'
+    + '</div>';
+}
+
+// ═══════════════════════════════════════════════════════
+// MODEL DRILL
+// ═══════════════════════════════════════════════════════
+var SWATCH = {
+  'white':'#F5F5F0','super white':'#FFFFFF','white pearl':'#F0EEE8',
+  'silver':'#C0C0C0','grey':'#808080','gray':'#808080',
+  'black':'#1A1A1A','attitude black':'#111111','midnight black':'#0D0D0D',
+  'red':'#CC0000','blue':'#1E3A8A','dark blue':'#1E3A8A',
+  'maroon':'#800000','orange':'#EA580C','golden':'#D4AF37',
+  'gaming grey':'#6B7280','brown':'#78350F','green':'#166534',
+};
+
+function getSwatch(colour) {
+  if (!colour) return '#E5E7EB';
+  var k = colour.toLowerCase();
+  for (var key in SWATCH) { if (k.indexOf(key) >= 0) return SWATCH[key]; }
+  var h = 0;
+  for (var i = 0; i < k.length; i++) h = k.charCodeAt(i) + ((h<<5) - h);
+  return 'hsl(' + (Math.abs(h)%360) + ',35%,60%)';
+}
+
+function openModelDrill(modelName) {
+  document.getElementById('mdTitle').textContent = modelName;
+  document.getElementById('mdSub').textContent   = 'Loading...';
+  document.getElementById('mdBody').innerHTML    = emptyHtml('🔄','Loading...','');
+  openOverlay('modelDrillOverlay');
+
+  callGET({ action:'getAllStock' }).then(function(d) {
+    if (d.success) allStock = d.stock || [];
+    renderModelDrill(modelName);
+  }).catch(function() {
+    renderModelDrill(modelName);
+  });
+}
+
+function renderModelDrill(modelName) {
+  var stock = allStock.filter(function(v) {
+    return (v.model||'').trim().toLowerCase() === modelName.trim().toLowerCase()
+        && v.status !== 'Delivered';
+  });
+
+  if (!stock.length) {
+    document.getElementById('mdSub').textContent = 'No stock';
+    document.getElementById('mdBody').innerHTML  = emptyHtml('🚗','No vehicles in stock','');
+    return;
+  }
+
+  document.getElementById('mdSub').textContent = stock.length + ' unit' + (stock.length!==1?'s':'') + ' — tap colour for chassis list';
+
+  // Group: variant+fuel → colour → {count, locs, vehicles}
+  var varMap = {};
+  stock.forEach(function(v) {
+    var vt  = v.variant  || 'Unknown';
+    var fu  = v.fuel     || '';
+    var co  = v.colour   || 'Unknown';
+    var loc = v.status === 'In Transit' ? 'In Transit' : (v.location || 'Unknown');
+    var key = vt + '|||' + fu;
+    if (!varMap[key]) varMap[key] = { variant:vt, fuel:fu, colours:{}, total:0 };
+    varMap[key].total++;
+    if (!varMap[key].colours[co]) varMap[key].colours[co] = { count:0, locs:{}, vehicles:[] };
+    varMap[key].colours[co].count++;
+    varMap[key].colours[co].vehicles.push(v);
+    varMap[key].colours[co].locs[loc] = (varMap[key].colours[co].locs[loc]||0)+1;
+  });
+
+  var variants = Object.values(varMap).sort(function(a,b){ return b.total-a.total; });
+
+  var out = '<div style="background:var(--dark);border-radius:var(--r);padding:16px 20px;margin-bottom:12px;color:white;display:flex;align-items:center;justify-content:space-between">'
+          + '<div><div style="font-size:10px;opacity:0.45;text-transform:uppercase;letter-spacing:0.8px">Total in Stock</div>'
+          + '<div style="font-size:11px;opacity:0.35;margin-top:2px">' + modelName + '</div></div>'
+          + '<div style="font-size:48px;font-weight:900;letter-spacing:-2px;line-height:1">' + stock.length + '</div></div>';
+
+  variants.forEach(function(vt) {
+    var colours = Object.entries(vt.colours).sort(function(a,b){ return b[1].count-a[1].count; });
+    var maxC    = Math.max.apply(null, colours.map(function(e){ return e[1].count; }));
+    var rows    = '';
+
+    colours.forEach(function(entry) {
+      var colour = entry[0];
+      var data   = entry[1];
+      var sw     = getSwatch(colour);
+
+      // Location pills
+      var pills = '';
+      Object.entries(data.locs).sort(function(a,b){ return b[1]-a[1]; }).forEach(function(le) {
+        var ls = LOC_STYLE[le[0]] || {bg:'#F3F4F6',fg:'#374151'};
+        pills += '<span class="lq-pill" style="background:' + ls.bg + ';color:' + ls.fg + '">'
+               + le[0] + ' <strong>' + le[1] + '</strong></span>';
+      });
+
+      // Allocated count
+      var allocN = data.vehicles.filter(function(v){ return v.allocatedTo && v.allocatedTo.trim(); }).length;
+      if (canSeeAllocation() && allocN > 0) {
+        pills += '<span class="lq-pill" style="background:#FEF3C7;color:#92400E">Alloc <strong>' + allocN + '</strong></span>';
+      }
+
+      // Safe drill key — only alphanum+underscore
+      var dk = (modelName + '_' + vt.variant + '_' + colour).replace(/[^a-zA-Z0-9]/g, '_');
+      drillStore[dk] = { vehicles:data.vehicles, colour:colour, variant:vt.variant, fuel:vt.fuel };
+
+      rows += '<div class="colour-row" onclick="openColourDrillByKey(\'' + dk + '\')">'
+            + '<div class="colour-left">'
+            + '<div class="colour-swatch" style="background:' + sw + '"></div>'
+            + '<div>'
+            + '<div class="colour-name">' + colour + '</div>'
+            + '<div class="colour-pills">' + pills + '</div>'
+            + '</div></div>'
+            + '<div class="colour-right">'
+            + '<div class="colour-count">' + data.count + '</div>'
+            + '<span class="colour-arrow">&#8250;</span>'
+            + '</div></div>';
+    });
+
+    out += '<div class="variant-card">'
+         + '<div class="vc-hdr">'
+         + '<div><span class="vc-name">' + vt.variant + '</span>'
+         + (vt.fuel ? '<span class="fuel-badge">' + vt.fuel + '</span>' : '')
+         + '</div>'
+         + '<span class="vc-total">' + vt.total + '</span>'
+         + '</div>' + rows + '</div>';
+  });
+
+  document.getElementById('mdBody').innerHTML = out;
+}
+
+function closeModelDrill() { closeOverlay('modelDrillOverlay'); }
+
+// ═══════════════════════════════════════════════════════
+// COLOUR DRILL
+// ═══════════════════════════════════════════════════════
+function openColourDrillByKey(dk) {
+  var entry = drillStore[dk];
+  if (!entry) { console.warn('No drill entry for key:', dk); return; }
+  openColourDrill(entry.colour, entry.variant, entry.fuel, entry.vehicles);
+}
+
+function openColourDrill(colour, variant, fuel, vehicles) {
+  document.getElementById('cdTitle').textContent = colour + ' \u00b7 ' + variant;
+  document.getElementById('cdSub').textContent   = vehicles.length + ' unit' + (vehicles.length!==1?'s':'') + (fuel ? ' \u00b7 ' + fuel : '');
+
+  var sorted = vehicles.slice().sort(function(a,b){ return parseInt(b.days||0)-parseInt(a.days||0); });
+  var html   = '';
+
+  sorted.forEach(function(v) {
+    var loc  = v.status === 'In Transit' ? 'In Transit' : (v.location||'Unknown');
+    var dc   = daysColor(v.days);
+    var ls   = LOC_STYLE[loc] || {bg:'#F3F4F6',fg:'#374151'};
+
+    var allocBadge = canSeeAllocation()
+      ? (v.allocatedTo && v.allocatedTo.trim()
+          ? '<span class="pill pill-allocated">&#128100; ' + v.allocatedTo + '</span>'
+          : '<span class="pill pill-available">Available</span>')
+      : '';
+
+    var moveBtn = canMoveVehicle()
+      ? '<button class="act-btn act-move" onclick="closeColourDrill();closeModelDrill();showVehicle(\'' + v.chassis + '\')">&#128663; Move</button>'
+      : '';
+    var allocBtn = '';
+    if (canAllocate()) {
+      allocBtn = v.allocatedTo && v.allocatedTo.trim()
+        ? '<button class="act-btn act-free" onclick="doDealloc(\'' + v.chassis + '\')">&#10005; Free</button>'
+        : '<button class="act-btn act-alloc" onclick="openAllocFor(\'' + v.chassis + '\')">&#128278; Alloc</button>';
+    }
+
+    html += '<div class="chassis-card">'
+          + '<div class="cc-top">'
+          + '<div class="cc-info">'
+          + '<div class="cc-chassis">' + v.chassis + '</div>'
+          + '<div class="cc-suffix">' + (v.suffix||'') + '</div>'
+          + '</div>'
+          + '<div class="cc-age">'
+          + '<div class="cc-age-num" style="color:' + dc + '">' + (v.days||0) + '</div>'
+          + '<div class="cc-age-lbl">days</div>'
+          + '</div></div>'
+          + '<div class="cc-pills">'
+          + '<span class="pill" style="background:' + ls.bg + ';color:' + ls.fg + '">' + loc + '</span> '
+          + allocBadge
+          + '</div>'
+          + '<div class="cc-buttons">' + moveBtn + allocBtn + '</div>'
+          + '</div>';
+  });
+
+  document.getElementById('cdBody').innerHTML = html || emptyHtml('','No vehicles','');
+  openOverlay('colourDrillOverlay');
+}
+
+function closeColourDrill() { closeOverlay('colourDrillOverlay'); }
+
+// ═══════════════════════════════════════════════════════
+// VEHICLE DETAIL SCREEN
+// ═══════════════════════════════════════════════════════
+async function showVehicle(chassis) {
+  activeV = allStock.find(function(x){ return x.chassis === chassis; });
+  if (!activeV) {
+    showLoader('Loading vehicle...');
+    try {
+      var d = await callGET({ action:'lookupChassis', chassis:chassis });
+      hideLoader();
+      if (d.success && d.vehicle) activeV = d.vehicle;
+      else { alert('Vehicle not found.'); return; }
+    } catch(e) { hideLoader(); alert('Error: ' + e.message); return; }
+  }
+  renderVehicleScreen();
+  document.getElementById('vehicleScreen').classList.add('open');
+}
+
+function closeVehicle() { document.getElementById('vehicleScreen').classList.remove('open'); }
+
+async function renderVehicleScreen() {
+  var v   = activeV;
+  var loc = v.status === 'In Transit' ? 'In Transit' : (v.location||'Unknown');
+  var dc  = daysColor(v.days);
+  document.getElementById('vsTitle').textContent = v.model + ' ' + v.variant;
+
+  var html = '<div class="v-hero">'
+    + '<div class="v-model">' + v.model + '</div>'
+    + '<div class="v-variant">' + v.variant + '</div>'
+    + '<div class="v-suffix">' + (v.suffix||'') + '</div>'
+    + '<div class="v-chassis">' + v.chassis + '</div>'
+    + '</div>';
+
+  html += '<div class="detail-grid">'
+    + '<div class="detail-item"><div class="di-label">Location</div><div class="di-value">' + locPillHtml(loc) + '</div></div>'
+    + '<div class="detail-item"><div class="di-label">Age</div><div class="di-value" style="color:' + dc + '">' + (v.days||0) + ' days</div></div>'
+    + '<div class="detail-item"><div class="di-label">Colour</div><div class="di-value">' + (v.colour||'—') + '</div></div>'
+    + '<div class="detail-item"><div class="di-label">Fuel</div><div class="di-value">' + (v.fuel||'—') + '</div></div>'
+    + '</div>';
+
+  if (canSeeAllocation()) {
+    if (v.allocatedTo && v.allocatedTo.trim()) {
+      html += '<div class="alloc-card alloc-allocated">'
+            + '<div class="alloc-label">Allocated To</div>'
+            + '<div class="alloc-name">&#128100; ' + v.allocatedTo + '</div>'
+            + (v.allocBookingRef ? '<div class="alloc-ref">Ref: ' + v.allocBookingRef + '</div>' : '')
+            + (v.allocDeliveryDate ? '<div class="alloc-ref">Expected: ' + v.allocDeliveryDate + '</div>' : '')
+            + (canAllocate() ? '<button class="btn btn-gray btn-sm mt-8" onclick="doDealloc(\'' + v.chassis + '\')">&#10005; Remove Allocation</button>' : '')
+            + '</div>';
+    } else {
+      html += '<div class="alloc-card alloc-available">'
+            + '<div class="alloc-label">Allocation</div>'
+            + '<div style="font-size:15px;font-weight:700;color:var(--green);margin-top:4px">&#9989; Available &mdash; Not Allocated</div>'
+            + (canAllocate() ? '<button class="btn btn-dark btn-sm mt-8" onclick="openAllocFor(\'' + v.chassis + '\')">&#128278; Allocate to Customer</button>' : '')
+            + '</div>';
+    }
+  }
+
+  if (canMoveVehicle()) {
+    html += '<div class="card mt-8">'
+          + '<div class="card-title">Move Vehicle</div>'
+          + '<div class="input-group"><label class="input-label">Move To *</label>'
+          + '<div class="loc-grid">'
+          + '<div class="loc-tile" id="vsL_Stockyard" onclick="vsSetLoc(this,\'Stockyard\')"><div class="loc-tile-icon">&#128338;</div><div class="loc-tile-name">Stockyard</div></div>'
+          + '<div class="loc-tile" id="vsL_Workshop" onclick="vsSetLoc(this,\'Workshop\')"><div class="loc-tile-icon">&#128295;</div><div class="loc-tile-name">Workshop</div></div>'
+          + '<div class="loc-tile" id="vsL_Showroom" onclick="vsSetLoc(this,\'Showroom\')"><div class="loc-tile-icon">&#127970;</div><div class="loc-tile-name">Showroom</div></div>'
+          + '<div class="loc-tile" id="vsL_Customer" onclick="vsSetLoc(this,\'Customer Test\')"><div class="loc-tile-icon">&#128664;</div><div class="loc-tile-name">Test Drive</div></div>'
+          + '</div></div>'
+          + '<div class="input-group"><label class="input-label">Driver / Staff *</label><input class="input-field" id="vsDriver" type="text" placeholder="Name of person moving"></div>'
+          + '<div class="input-group"><label class="input-label">Remarks</label><input class="input-field" id="vsRemarks" type="text" placeholder="Optional"></div>'
+          + '<div class="alert alert-err" id="vsErr"></div>'
+          + '<button class="btn btn-dark" onclick="doVehicleMove()">&#128663; Dispatch Vehicle</button>'
+          + '</div>';
+  }
+
+  html += '<div class="card mt-8">'
+        + '<div class="card-title">Actions</div>'
+        + '<div style="display:flex;flex-direction:column;gap:8px">'
+        + '<button class="btn btn-gray" onclick="openSoldModal()">&#9873; Mark as Sold &mdash; Not Delivered</button>'
+        + '<button class="btn btn-gray" onclick="openDeliverModal()">&#127881; Mark as Delivered to Customer</button>'
+        + '</div></div>';
+
+  html += '<div class="card-title mt-8">Movement History</div>'
+        + '<div class="card" id="vsHist">' + emptyHtml('','Loading history...','') + '</div>';
+
+  document.getElementById('vsBody').innerHTML = html;
+
+  try {
+    var hist = await callGET({ action:'getChassisHistory', chassis:v.chassis });
+    var hEl  = document.getElementById('vsHist');
+    if (hEl && hist.success && hist.history && hist.history.length) {
+      var hHtml = '';
+      hist.history.forEach(function(h) {
+        var cls = h.type === 'dispatch' ? 'dispatch' : h.type === 'receive' ? 'receive' : 'arrival';
+        var ts  = h.timestamp ? new Date(h.timestamp).toLocaleString('en-IN',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) : '';
+        hHtml += '<div class="hist-item"><div class="hist-dot ' + cls + '"></div><div class="hist-info">'
+               + '<div class="hist-action">' + (h.action || h.type || 'Movement') + '</div>'
+               + '<div class="hist-meta">' + (h.from ? h.from + ' &rarr; ' : '') + (h.to||'') + (h.staff?' &middot; '+h.staff:'') + '</div>'
+               + '<div class="hist-meta">' + ts + '</div>'
+               + '</div></div>';
+      });
+      hEl.innerHTML = hHtml;
+    } else if (hEl) {
+      hEl.innerHTML = emptyHtml('','No history found','');
+    }
+  } catch(e) {}
+}
+
+var vsSelectedLoc = '';
+function vsSetLoc(el, loc) {
+  vsSelectedLoc = loc;
+  ['Stockyard','Workshop','Showroom','Customer'].forEach(function(l) {
+    var t = document.getElementById('vsL_' + l);
+    if (t) t.classList.toggle('active', l === loc || 'Customer Test' === loc && l === 'Customer');
+  });
+  el.classList.add('active');
+}
+
+async function doVehicleMove() {
+  if (!activeV) return;
+  if (!vsSelectedLoc) { showAlert('vsErr','&#9888; Please select destination location.'); return; }
+  var driver = document.getElementById('vsDriver').value.trim();
+  if (!driver) { showAlert('vsErr','&#9888; Driver / staff name required.'); return; }
+  hideAlert('vsErr');
+  showLoader('Dispatching...');
+  try {
+    var r = await callAPI({
+      action:'logMovement', chassis:activeV.chassis,
+      model:activeV.model||'', variant:activeV.variant||'', suffix:activeV.suffix||'',
+      from:activeV.location||'Unknown', to:vsSelectedLoc,
+      staff:currentUser.name, role:currentUser.role,
+      driverName:driver, remarks:(document.getElementById('vsRemarks').value||'').trim(),
+      via:'PWA', timestamp:nowISO()
+    });
+    hideLoader();
+    if (r.success) {
+      pushRecent({ chassis:activeV.chassis, from:activeV.location, to:vsSelectedLoc });
+      activeV.location = vsSelectedLoc; activeV.status = 'In Transit';
+      closeVehicle();
+      showSuccess('&#128663;','Dispatched!','Vehicle is now In Transit.',[
+        {k:'Chassis',v:activeV.chassis},{k:'Model',v:activeV.model+' '+activeV.variant},
+        {k:'To',v:vsSelectedLoc},{k:'Driver',v:driver}
+      ]);
+      loadAllStock();
+    } else { showAlert('vsErr','&#10060; ' + (r.error||'Failed')); }
+  } catch(e) { hideLoader(); showAlert('vsErr','&#10060; ' + e.message); }
+}
+
+// ═══════════════════════════════════════════════════════
+// MOVEMENT LOG TAB
+// ═══════════════════════════════════════════════════════
+var mvSelectedLoc = '';
+function mvSetLoc(el, loc) {
+  mvSelectedLoc = loc;
+  ['Stockyard','Workshop','Showroom','Customer'].forEach(function(l) {
+    var t = document.getElementById('mvL_' + l);
+    if (t) t.classList.remove('active');
+  });
+  el.classList.add('active');
+}
+
+async function doLogMovement() {
+  var chassis = document.getElementById('mvChassis').value.trim().toUpperCase();
+  var driver  = document.getElementById('mvDriver').value.trim();
+  if (!chassis)       { showAlert('mvErr','&#9888; Chassis number required.'); return; }
+  if (!mvSelectedLoc) { showAlert('mvErr','&#9888; Select destination location.'); return; }
+  if (!driver)        { showAlert('mvErr','&#9888; Driver / staff name required.'); return; }
+  hideAlert('mvErr');
+  showLoader('Dispatching...');
+  try {
+    var v = allStock.find(function(x){ return x.chassis === chassis; });
+    var r = await callAPI({
+      action:'logMovement', chassis:chassis,
+      model:v?v.model:'', variant:v?v.variant:'', suffix:v?v.suffix||'':'',
+      from:v?v.location||'Unknown':'Unknown', to:mvSelectedLoc,
+      staff:currentUser.name, role:currentUser.role, driverName:driver,
+      remarks:(document.getElementById('mvRemarks').value||'').trim(),
+      via:'PWA', timestamp:nowISO()
+    });
+    hideLoader();
+    if (r.success) {
+      pushRecent({ chassis:chassis, from:v?v.location:'Unknown', to:mvSelectedLoc });
+      if (v) { v.location = mvSelectedLoc; v.status = 'In Transit'; }
+      document.getElementById('mvChassis').value = '';
+      document.getElementById('mvDriver').value  = '';
+      document.getElementById('mvRemarks').value = '';
+      mvSelectedLoc = '';
+      ['Stockyard','Workshop','Showroom','Customer'].forEach(function(l){ var t=document.getElementById('mvL_'+l); if(t) t.classList.remove('active'); });
+      showSuccess('&#128663;','Dispatched!','Vehicle is In Transit.',[
+        {k:'Chassis',v:chassis},{k:'To',v:mvSelectedLoc},{k:'Driver',v:driver}
+      ]);
+    } else { showAlert('mvErr','&#10060; ' + (r.error||'Failed')); }
+  } catch(e) { hideLoader(); showAlert('mvErr','&#10060; ' + e.message); }
+}
+
+function pushRecent(data) {
+  recentMoves.unshift({ chassis:data.chassis, from:data.from, to:data.to, staff:currentUser.name, time:new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}) });
+  if (recentMoves.length > 20) recentMoves.pop();
+  try { localStorage.setItem('pt_recent', JSON.stringify(recentMoves)); } catch(e) {}
+  renderRecentMoves();
+}
+
+function renderRecentMoves() {
+  var el = document.getElementById('recentList');
+  if (!el) return;
+  if (!recentMoves.length) { el.innerHTML = emptyHtml('','No recent movements',''); return; }
+  var html = '';
+  recentMoves.slice(0,10).forEach(function(m) {
+    html += '<div class="recent-item">'
+          + '<div class="recent-dot"></div>'
+          + '<div class="recent-info">'
+          + '<div class="recent-chassis">' + m.chassis + '</div>'
+          + '<div class="recent-detail">' + (m.from||'?') + ' &rarr; ' + (m.to||'?') + ' &middot; ' + (m.staff||'') + '</div>'
+          + '</div>'
+          + '<div class="recent-time">' + (m.time||'') + '</div>'
+          + '</div>';
+  });
+  el.innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════════════
+// RECEIVE
+// ═══════════════════════════════════════════════════════
+async function loadPendingTransits() {
+  var el = document.getElementById('transitList');
+  el.innerHTML = emptyHtml('🔄','Loading...','');
+  try {
+    var data = await callGET({ action:'getPendingTransits' });
+    if (!data.success || !data.pending || !data.pending.length) {
+      el.innerHTML = emptyHtml('✅','No vehicles in transit','All movements confirmed');
+      return;
+    }
+    var html = '';
+    data.pending.forEach(function(v) {
+      html += '<div class="transit-card">'
+            + '<div class="tc-model">' + v.model + ' ' + v.variant + ' <span style="opacity:0.7;font-size:12px">' + (v.suffix||'') + '</span></div>'
+            + '<div class="tc-chassis">' + v.chassis + '</div>'
+            + '<div class="tc-meta">From: ' + (v.from||'?') + ' &rarr; To: ' + (v.to||'?') + '</div>'
+            + '<div class="tc-meta">Driver: ' + (v.driverName||'?') + (v.colour?' &middot; '+v.colour:'') + '</div>'
+            + '<button class="tc-confirm" onclick="openReceive(\'' + v.chassis + '\')">&#128229; Confirm Receipt</button>'
+            + '</div>';
+    });
+    el.innerHTML = html;
+  } catch(e) { el.innerHTML = emptyHtml('⚠️','Error loading','Check connection'); }
+}
+
+function openReceive(chassis) {
+  rcvChassis = chassis;
+  var v = allStock.find(function(x){ return x.chassis === chassis; }) || { chassis:chassis };
+  document.getElementById('rcvCard').innerHTML =
+    '<div class="v-model">' + (v.model||'Vehicle') + ' ' + (v.variant||'') + '</div>'
+    + '<div class="v-chassis">' + chassis + '</div>';
+  document.getElementById('rcvDriver').value    = '';
+  document.getElementById('rcvCondition').value = '';
+  hideAlert('rcvErr');
+  openOverlay('receiveOverlay');
+}
+
+async function confirmReceive() {
+  var driver    = document.getElementById('rcvDriver').value.trim();
+  var condition = document.getElementById('rcvCondition').value.trim();
+  if (!driver) { showAlert('rcvErr','&#9888; Driver name required.'); return; }
+  hideAlert('rcvErr');
+  showLoader('Confirming receipt...');
+  try {
+    var r = await callAPI({
+      action:'receiveVehicle', chassis:rcvChassis,
+      receivedBy:currentUser.name, driverName:driver, condition:condition,
+      timestamp:nowISO()
+    });
+    hideLoader();
+    closeOverlay('receiveOverlay');
+    if (r.success) {
+      var v = allStock.find(function(x){ return x.chassis === rcvChassis; });
+      if (v) v.status = 'In Stock';
+      showSuccess('&#128229;','Received!','Transit confirmed.',[
+        {k:'Chassis',v:rcvChassis},{k:'Driver',v:driver},{k:'By',v:currentUser.name}
+      ]);
+      loadPendingTransits(); loadAllStock();
+    } else { alert('Failed: ' + (r.error||'Unknown')); }
+  } catch(e) { hideLoader(); alert('Error: ' + e.message); }
+}
+
+// ═══════════════════════════════════════════════════════
+// STOCK SEARCH
+// ═══════════════════════════════════════════════════════
+function setFilter(filter, el) {
+  stockFilter = filter;
+  document.querySelectorAll('.filter-chip').forEach(function(c){ c.classList.remove('active'); });
+  if (el) el.classList.add('active');
+  renderStock();
+}
+
+function renderStock() {
+  var el    = document.getElementById('stockList');
+  if (!el) return;
+  var query = ((document.getElementById('stockSearch')||{}).value||'').trim().toLowerCase();
+  var items = allStock.filter(function(v){ return v.status !== 'Delivered'; });
+
+  if (stockFilter === 'Stockyard')  items = items.filter(function(v){ return v.location==='Stockyard'  && v.status!=='In Transit'; });
+  if (stockFilter === 'Workshop')   items = items.filter(function(v){ return v.location==='Workshop'   && v.status!=='In Transit'; });
+  if (stockFilter === 'Showroom')   items = items.filter(function(v){ return v.location==='Showroom'   && v.status!=='In Transit'; });
+  if (stockFilter === 'In Transit') items = items.filter(function(v){ return v.status==='In Transit'; });
+  if (stockFilter === 'TKM Billed') items = items.filter(function(v){ return v.status==='TKM Billed'; });
+  if (stockFilter === 'Allocated')  items = items.filter(function(v){ return v.allocatedTo && v.allocatedTo.trim(); });
+
+  if (query) {
+    items = items.filter(function(v) {
+      return (v.chassis||'').toLowerCase().includes(query)
+          || (v.model||'').toLowerCase().includes(query)
+          || (v.variant||'').toLowerCase().includes(query)
+          || (v.colour||'').toLowerCase().includes(query)
+          || (v.suffix||'').toLowerCase().includes(query)
+          || (v.allocatedTo||'').toLowerCase().includes(query);
+    });
+  }
+
+  if (!items.length) { el.innerHTML = emptyHtml('&#128269;','No vehicles found','Try different search or filter'); return; }
+
+  var html = '';
+  items.forEach(function(v) { html += buildChassisCard(v, false); });
+  el.innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════════════
+// GATE ENTRY
+// ═══════════════════════════════════════════════════════
+function openGateEntry() {
+  GE = { src:'TKM', loc:'Stockyard' };
+  document.getElementById('geSrc_TKM').className     = 'src-btn active';
+  document.getElementById('geSrc_CoDealer').className = 'src-btn';
+  document.getElementById('geCoDealerName').classList.add('hidden');
+  document.getElementById('geCoDealerName').value = '';
+  ['geChassis','geDriver','geRemarks'].forEach(function(id){ document.getElementById(id).value=''; });
+  document.getElementById('geDispatch').value = today();
+  document.getElementById('geSuffix').value   = '';
+  document.getElementById('geSuffix').className = 'input-field';
+  ['Stockyard','Workshop','Showroom'].forEach(function(l){
+    var el = document.getElementById('geL_'+l);
+    if (el) el.classList.toggle('active', l==='Stockyard');
+  });
+  hideAlert('geErr');
+  populateModelDD('ge');
+  ['geVariant','geFuel','geColour','geInterior'].forEach(function(id){ populateDD(id,[],'—'); });
+  openOverlay('gateOverlay');
+}
+function closeGate() { closeOverlay('gateOverlay'); }
+
+function geSetSrc(src) {
+  GE.src = src;
+  document.getElementById('geSrc_TKM').className     = 'src-btn' + (src==='TKM'?'     active':'');
+  document.getElementById('geSrc_CoDealer').className = 'src-btn' + (src==='Co-Dealer'?' active':'');
+  document.getElementById('geCoDealerName').classList.toggle('hidden', src!=='Co-Dealer');
+}
+function geSetLoc(el, loc) {
+  GE.loc = loc;
+  ['Stockyard','Workshop','Showroom'].forEach(function(l){ var t=document.getElementById('geL_'+l); if(t) t.classList.remove('active'); });
+  el.classList.add('active');
+}
+
+async function confirmGateEntry() {
+  var chassis  = document.getElementById('geChassis').value.trim().toUpperCase();
+  var model    = document.getElementById('geModel').value;
+  var variant  = document.getElementById('geVariant').value;
+  var fuel     = document.getElementById('geFuel').value;
+  var colour   = document.getElementById('geColour').value;
+  var interior = document.getElementById('geInterior').value;
+  var suffix   = document.getElementById('geSuffix').value;
+  var driver   = document.getElementById('geDriver').value.trim();
+  var dispatch = document.getElementById('geDispatch').value;
+  var remarks  = document.getElementById('geRemarks').value.trim();
+  var coDealer = document.getElementById('geCoDealerName').value.trim();
+  if (!chassis)  { showAlert('geErr','&#9888; Chassis required.'); return; }
+  if (!model || !variant || !fuel || !colour || !interior) { showAlert('geErr','&#9888; Fill all vehicle specs.'); return; }
+  if (!driver)   { showAlert('geErr','&#9888; Driver name required.'); return; }
+  if (GE.src==='Co-Dealer' && !coDealer) { showAlert('geErr','&#9888; Co-dealer name required.'); return; }
+  hideAlert('geErr');
+  closeOverlay('gateOverlay');
+  showLoader('Registering arrival...');
+  try {
+    var r = await callAPI({
+      action:'addNewVehicle',
+      chassis:chassis, model:model, variant:variant, fuel:fuel, colour:colour, interior:interior, suffix:suffix,
+      dispatch:dispatch||today(), arrival:today(), location:GE.loc, status:'In Stock',
+      source:GE.src, coDealerName:coDealer, driverName:driver, receivedBy:currentUser.name,
+      gateEntry:true, remarks:remarks, timestamp:nowISO()
+    });
+    hideLoader();
+    if (r.success) {
+      showSuccess('&#128663;','Vehicle Registered!',model+' '+variant+' arrived at '+GE.loc,[
+        {k:'Chassis',v:chassis},{k:'Model',v:model+' '+variant},{k:'Suffix',v:suffix},
+        {k:'Colour',v:colour},{k:'Fuel',v:fuel},{k:'Location',v:GE.loc},
+        {k:'Source',v:GE.src+(coDealer?' — '+coDealer:'')},{k:'Driver',v:driver}
+      ]);
+      loadAllStock();
+    } else { alert('Failed: ' + (r.error||'Unknown')); }
+  } catch(e) { hideLoader(); alert('Error: ' + e.message); }
+}
+
+// ═══════════════════════════════════════════════════════
+// TKM BILLED
+// ═══════════════════════════════════════════════════════
+function openTkmBilled() {
+  if (!canEnterTKMBilled()) return;
+  ['tbChassis','tbInvoiceNo'].forEach(function(id){ document.getElementById(id).value=''; });
+  document.getElementById('tbBillingDate').value = today();
+  document.getElementById('tbSuffix').value      = '';
+  document.getElementById('tbSuffix').className  = 'input-field';
+  hideAlert('tbErr');
+  populateModelDD('tb');
+  ['tbVariant','tbFuel','tbColour','tbInterior'].forEach(function(id){ populateDD(id,[],'—'); });
+  openOverlay('tkmBilledOverlay');
+}
+
+async function confirmTkmBilled() {
+  var chassis  = document.getElementById('tbChassis').value.trim().toUpperCase();
+  var model    = document.getElementById('tbModel').value;
+  var variant  = document.getElementById('tbVariant').value;
+  var fuel     = document.getElementById('tbFuel').value;
+  var colour   = document.getElementById('tbColour').value;
+  var interior = document.getElementById('tbInterior').value;
+  var suffix   = document.getElementById('tbSuffix').value;
+  var billDate = document.getElementById('tbBillingDate').value;
+  var invoice  = document.getElementById('tbInvoiceNo').value.trim();
+  if (!chassis)  { showAlert('tbErr','&#9888; Chassis required.'); return; }
+  if (!model||!variant||!fuel||!colour||!interior) { showAlert('tbErr','&#9888; Fill all specs.'); return; }
+  if (!billDate) { showAlert('tbErr','&#9888; Billing date required.'); return; }
+  hideAlert('tbErr');
+  closeOverlay('tkmBilledOverlay');
+  showLoader('Registering TKM Billed...');
+  try {
+    var r = await callAPI({
+      action:'addTKMBilled', chassis:chassis, model:model, variant:variant, fuel:fuel, colour:colour, interior:interior, suffix:suffix,
+      billingDate:billDate, invoiceNo:invoice, billedBy:currentUser.name, timestamp:nowISO()
+    });
+    hideLoader();
+    if (r.success) {
+      showSuccess('&#128203;','TKM Billed Registered!','Awaiting arrival.',[
+        {k:'Chassis',v:chassis},{k:'Model',v:model+' '+variant},{k:'Colour',v:colour},{k:'Invoice',v:invoice||'—'},{k:'Date',v:billDate}
+      ]);
+      loadAllStock();
+    } else { alert('Failed: ' + (r.error||'Unknown')); }
+  } catch(e) { hideLoader(); alert('Error: ' + e.message); }
+}
+
+function openTkmList() {
+  var items = allStock.filter(function(v){ return v.status==='TKM Billed'; });
+  var html  = items.length
+    ? items.map(function(v) {
+        return '<div class="chassis-card"><div class="cc-chassis">' + v.chassis + '</div>'
+             + '<div class="cc-suffix">' + v.model + ' ' + v.variant + ' ' + (v.suffix||'') + '</div>'
+             + '<div class="cc-pills" style="margin-top:6px"><span class="pill pill-tkm">TKM Billed</span>'
+             + '<span style="font-size:11px;color:var(--gray-400);margin-left:6px">' + (v.colour||'') + (v.fuel?' &middot; '+v.fuel:'') + '</span></div>'
+             + '<div style="font-size:11px;font-weight:700;color:var(--purple);margin-top:5px">Billed ' + (v.days||0) + ' days ago</div></div>';
+      }).join('')
+    : emptyHtml('✅','No pending TKM vehicles','');
+  document.getElementById('tkmListBody').innerHTML = html;
+  openOverlay('tkmListOverlay');
+}
+
+// ═══════════════════════════════════════════════════════
+// ALLOCATION
+// ═══════════════════════════════════════════════════════
+function openAllocFor(chassis) {
+  activeV = allStock.find(function(x){ return x.chassis===chassis; }) || { chassis:chassis };
+  openAllocModal();
+}
+
+function openAllocModal() {
+  if (!activeV) return;
+  var v = activeV;
+  document.getElementById('allocTitle').textContent = v.allocatedTo ? 'Update Allocation' : 'Allocate Vehicle';
+  document.getElementById('allocVehicleCard').innerHTML =
+    '<div class="v-model">' + (v.model||'') + ' ' + (v.variant||'') + '</div>'
+    + '<div class="v-suffix">' + (v.suffix||'') + '</div>'
+    + '<div class="v-chassis">' + (v.chassis||'') + '</div>';
+  document.getElementById('allocCust').value    = v.allocatedTo       || '';
+  document.getElementById('allocRef').value     = v.allocBookingRef   || '';
+  document.getElementById('allocDate').value    = v.allocDeliveryDate || '';
+  document.getElementById('allocRemarks').value = '';
+  document.getElementById('allocDate').min      = today();
+  hideAlert('allocErr');
+  openOverlay('allocOverlay');
+}
+
+async function confirmAlloc() {
+  var cust    = document.getElementById('allocCust').value.trim();
+  var ref     = document.getElementById('allocRef').value.trim();
+  var date    = document.getElementById('allocDate').value;
+  var remarks = document.getElementById('allocRemarks').value.trim();
+  if (!cust) { showAlert('allocErr','&#9888; Customer name required.'); return; }
+  if (!date) { showAlert('allocErr','&#9888; Expected delivery date required.'); return; }
+  hideAlert('allocErr');
+  closeOverlay('allocOverlay');
+  showLoader('Allocating...');
+  try {
+    var r = await callAPI({
+      action:'allocateVehicle', chassis:activeV.chassis,
+      allocatedTo:cust, allocBookingRef:ref, allocDeliveryDate:date, allocRemarks:remarks,
+      allocatedBy:currentUser.name, timestamp:nowISO()
+    });
+    hideLoader();
+    if (r.success) {
+      activeV.allocatedTo=cust; activeV.allocBookingRef=ref; activeV.allocDeliveryDate=date;
+      var sv = allStock.find(function(x){ return x.chassis===activeV.chassis; });
+      if (sv) { sv.allocatedTo=cust; sv.allocBookingRef=ref; sv.allocDeliveryDate=date; }
+      showSuccess('&#128278;','Allocated!',cust+' — '+activeV.model+' '+activeV.variant,[
+        {k:'Chassis',v:activeV.chassis},{k:'Customer',v:cust},{k:'Ref',v:ref||'—'},{k:'Delivery',v:date}
+      ]);
+      if (activeTab==='Stock') renderStock();
+    } else { alert('Failed: '+(r.error||'Unknown')); }
+  } catch(e) { hideLoader(); alert('Error: '+e.message); }
+}
+
+async function doDealloc(chassis) {
+  if (!confirm('Remove allocation for ' + chassis + '?')) return;
+  showLoader('Removing allocation...');
+  try {
+    var r = await callAPI({ action:'deallocateVehicle', chassis:chassis, deallocBy:currentUser.name, timestamp:nowISO() });
+    hideLoader();
+    if (r.success) {
+      var v = allStock.find(function(x){ return x.chassis===chassis; });
+      if (v) { v.allocatedTo=''; v.allocBookingRef=''; v.allocDeliveryDate=''; }
+      showSuccess('&#9989;','De-allocated','Vehicle is now available.',[{k:'Chassis',v:chassis}]);
+      if (activeTab==='Stock') renderStock();
+    } else { alert('Failed: '+(r.error||'Unknown')); }
+  } catch(e) { hideLoader(); alert('Error: '+e.message); }
+}
+
+// ═══════════════════════════════════════════════════════
+// SOLD / DELIVER
+// ═══════════════════════════════════════════════════════
+function openSoldModal() {
+  if (!activeV) return;
+  document.getElementById('soldVCard').innerHTML =
+    '<div class="v-model">' + (activeV.model||'') + ' ' + (activeV.variant||'') + '</div>'
+    + '<div class="v-chassis">' + (activeV.chassis||'') + '</div>';
+  document.getElementById('soldRef').value     = '';
+  document.getElementById('soldRemarks').value = '';
+  hideAlert('soldErr');
+  openOverlay('soldOverlay');
+}
+
+async function confirmSold() {
+  var ref = document.getElementById('soldRef').value.trim();
+  if (!ref) { showAlert('soldErr','&#9888; Booking ref / customer name required.'); return; }
+  hideAlert('soldErr');
+  closeOverlay('soldOverlay');
+  showLoader('Updating...');
+  try {
+    var r = await callAPI({
+      action:'markAsSold', chassis:activeV.chassis, model:activeV.model, variant:activeV.variant,
+      bookingRef:ref, soldBy:currentUser.name,
+      remarks:(document.getElementById('soldRemarks').value||'').trim(), timestamp:nowISO()
+    });
+    hideLoader();
+    if (r.success) {
+      showSuccess('&#9873;','Marked as Sold','Status updated.',[{k:'Chassis',v:activeV.chassis},{k:'Booking',v:ref}]);
+      loadAllStock();
+    } else { alert('Failed: '+(r.error||'Unknown')); }
+  } catch(e) { hideLoader(); alert('Error: '+e.message); }
+}
+
+function openDeliverModal() {
+  if (!activeV || !confirm('Mark ' + activeV.chassis + ' as Delivered? This cannot be undone.')) return;
+  doDeliver();
+}
+
+async function doDeliver() {
+  showLoader('Delivering...');
+  try {
+    var r = await callAPI({ action:'deliverVehicle', chassis:activeV.chassis, deliveredBy:currentUser.name, timestamp:nowISO() });
+    hideLoader();
+    if (r.success) {
+      closeVehicle();
+      showSuccess('&#127881;','Delivered!','Vehicle removed from stock.',[{k:'Chassis',v:activeV.chassis}]);
+      loadAllStock();
+    } else { alert('Failed: '+(r.error||'Unknown')); }
+  } catch(e) { hideLoader(); alert('Error: '+e.message); }
+}
+
+// ═══════════════════════════════════════════════════════
+// BULK TRAILER
+// ═══════════════════════════════════════════════════════
+function openTrailer() {
+  TS = { step:1, src:'TKM', loc:'Stockyard', details:{}, vehicles:[] };
+  ['tsTrailerNo','tsTransporter','tsDriverName','tsDriverMob','tsRemarks','tsCoDlr'].forEach(function(id){ document.getElementById(id).value=''; });
+  document.getElementById('tsDateTime').value = new Date().toISOString().slice(0,16);
+  document.getElementById('tsCoDlr').classList.add('hidden');
+  document.getElementById('tsSrcTKM').className = 'src-btn active';
+  document.getElementById('tsSrcCD').className  = 'src-btn';
+  ['tsL_Stockyard','tsL_Workshop','tsL_Showroom'].forEach(function(id){ var el=document.getElementById(id); if(el) el.classList.toggle('active',id==='tsL_Stockyard'); });
+  hideAlert('tsS1Err');
+  populateModelDD('tv');
+  ['tvVariant','tvFuel','tvColour','tvInterior'].forEach(function(id){ populateDD(id,[],'—'); });
+  document.getElementById('tvChassis').value  = '';
+  document.getElementById('tvRemarks').value  = '';
+  document.getElementById('tvSuffix').value   = '';
+  document.getElementById('tvDispatch').value = today();
+  tsGo(1);
+  document.getElementById('trailerScreen').classList.add('open');
+}
+function closeTrailer() { document.getElementById('trailerScreen').classList.remove('open'); }
+
+function tsSetSrc(src) {
+  TS.src = src;
+  document.getElementById('tsSrcTKM').className = 'src-btn' + (src==='TKM'?'     active':'');
+  document.getElementById('tsSrcCD').className  = 'src-btn' + (src==='Co-Dealer'?' active':'');
+  document.getElementById('tsCoDlr').classList.toggle('hidden', src!=='Co-Dealer');
+}
+function tsSetLoc(el, loc) {
+  TS.loc = loc;
+  ['Stockyard','Workshop','Showroom'].forEach(function(l){ var t=document.getElementById('tsL_'+l); if(t) t.classList.remove('active'); });
+  el.classList.add('active');
+}
+
+function tsGo(step) {
+  TS.step = step;
+  [1,2,3].forEach(function(s) {
+    var panel = document.getElementById('tsS'+s);
+    if (panel) panel.className = s===step ? '' : 'hidden';
+    var nc = document.getElementById('tsN'+s);
+    var lc = document.getElementById('tsL'+s);
+    if (nc) { nc.className = 'step-circle' + (s<step?' done':s===step?' active':''); nc.textContent = s<step?'✓':String(s); }
+    if (lc) { lc.className = 'step-lbl' + (s===step?' active':''); }
+  });
+  [1,2].forEach(function(s){ var ln=document.getElementById('tsLine'+s); if(ln) ln.className='step-line'+(s<step?' done':''); });
+  var back = document.getElementById('tsBtnBack');
+  var next = document.getElementById('tsBtnNext');
+  back.textContent = step===1 ? 'Cancel' : '← Back';
+  next.textContent = step===1 ? 'Next →' : step===2 ? 'Review (' + TS.vehicles.length + ' vehicles)' : '✅ Register All';
+  next.style.background = step===3 ? '#064E3B' : '';
+  if (step===2) renderTsStep2();
+  if (step===3) renderTsStep3();
+}
+
+function trailerNext() {
+  if (TS.step===1)      validateTs1();
+  else if (TS.step===2) { if(!TS.vehicles.length){showAlert('tsS2Err','⚠️ Add at least one vehicle.');return;} tsGo(3); }
+  else                  submitTrailer();
+}
+function trailerBack() {
+  if (TS.step===1) closeTrailer();
+  else             tsGo(TS.step-1);
+}
+
+function validateTs1() {
+  var fields = { tsTrailerNo:'Trailer number', tsTransporter:'Transporter', tsDriverName:'Driver name', tsDriverMob:'Driver mobile', tsDateTime:'Date & time' };
+  for (var id in fields) {
+    var v = document.getElementById(id).value.trim();
+    if (!v) { showAlert('tsS1Err','⚠️ ' + fields[id] + ' required.'); return; }
+    if (id==='tsDriverMob' && v.length!==10) { showAlert('tsS1Err','⚠️ Mobile must be 10 digits.'); return; }
+  }
+  if (TS.src==='Co-Dealer' && !document.getElementById('tsCoDlr').value.trim()) { showAlert('tsS1Err','⚠️ Co-dealer name required.'); return; }
+  TS.details = {
+    trailerNo:       document.getElementById('tsTrailerNo').value.trim().toUpperCase(),
+    transporter:     document.getElementById('tsTransporter').value.trim(),
+    driverName:      document.getElementById('tsDriverName').value.trim(),
+    driverMobile:    document.getElementById('tsDriverMob').value.trim(),
+    reportingDT:     document.getElementById('tsDateTime').value,
+    location:        TS.loc, source:TS.src,
+    coDealerName:    TS.src==='Co-Dealer' ? document.getElementById('tsCoDlr').value.trim() : '',
+    remarks:         document.getElementById('tsRemarks').value.trim(),
+    receivedBy:      currentUser.name
+  };
+  hideAlert('tsS1Err');
+  tsGo(2);
+}
+
+function renderTsStep2() {
+  var td = TS.details;
+  document.getElementById('tsSummaryBanner').innerHTML =
+    '<div style="font-size:10px;opacity:0.5;text-transform:uppercase;margin-bottom:4px">Trailer in Progress</div>'
+    + '<div style="font-size:18px;font-weight:900">' + td.trailerNo + '</div>'
+    + '<div style="font-size:12px;opacity:0.65;margin-top:5px">' + td.transporter + ' &middot; ' + td.driverName + ' ' + td.driverMobile + '</div>'
+    + '<div style="font-size:12px;opacity:0.65">' + td.source + (td.coDealerName?' — '+td.coDealerName:'') + ' &rarr; ' + td.location + '</div>';
+  renderTsVehicles();
+  document.getElementById('tsAddTitle').textContent = 'Add Vehicle #' + (TS.vehicles.length+1);
+  document.getElementById('tsBtnNext').textContent  = 'Review (' + TS.vehicles.length + ' vehicles)';
+}
+
+function renderTsVehicles() {
+  var el = document.getElementById('tsVehicleList');
+  el.innerHTML = TS.vehicles.map(function(v, i) {
+    return '<div class="veh-mini">'
+         + '<div><div class="veh-mini-model">' + v.model + ' ' + v.variant + ' <span style="color:var(--red)">' + v.suffix + '</span></div>'
+         + '<div class="veh-mini-chassis">' + v.chassis + '</div></div>'
+         + '<button class="veh-mini-rm" onclick="tsRemoveVeh(' + i + ')">&#10005;</button></div>';
+  }).join('');
+}
+function tsRemoveVeh(i) { TS.vehicles.splice(i,1); renderTsStep2(); }
+
+function addTrailerVehicle() {
+  var chassis  = document.getElementById('tvChassis').value.trim().toUpperCase();
+  var model    = document.getElementById('tvModel').value;
+  var variant  = document.getElementById('tvVariant').value;
+  var fuel     = document.getElementById('tvFuel').value;
+  var colour   = document.getElementById('tvColour').value;
+  var interior = document.getElementById('tvInterior').value;
+  var suffix   = document.getElementById('tvSuffix').value;
+  var dispatch = document.getElementById('tvDispatch').value;
+  var remarks  = document.getElementById('tvRemarks').value.trim();
+  if (!chassis) { showAlert('tvErr','⚠️ Chassis required.'); return; }
+  if (!model||!variant||!fuel||!colour||!interior) { showAlert('tvErr','⚠️ Fill all vehicle specs.'); return; }
+  if (TS.vehicles.find(function(v){ return v.chassis===chassis; })) { showAlert('tvErr','⚠️ Chassis already added.'); return; }
+  hideAlert('tvErr');
+  TS.vehicles.push({ chassis:chassis, model:model, variant:variant, fuel:fuel, colour:colour, interior:interior, suffix:suffix, dispatch:dispatch, remarks:remarks });
+  document.getElementById('tvChassis').value = '';
+  document.getElementById('tvRemarks').value = '';
+  document.getElementById('tvSuffix').value  = '';
+  document.getElementById('tvSuffix').className = 'input-field';
+  renderTsStep2();
+}
+
+function renderTsStep3() {
+  var td = TS.details;
+  document.getElementById('tsFinalBanner').innerHTML =
+    '<div style="font-size:10px;opacity:0.5;text-transform:uppercase;margin-bottom:4px">Ready to Register &mdash; ' + TS.vehicles.length + ' Vehicles</div>'
+    + '<div style="font-size:18px;font-weight:900">' + td.trailerNo + '</div>'
+    + '<div style="font-size:12px;opacity:0.65;margin-top:5px">' + td.transporter + ' &middot; ' + td.driverName + ' ' + td.driverMobile + '</div>'
+    + '<div style="font-size:12px;opacity:0.65">' + td.source + (td.coDealerName?' — '+td.coDealerName:'') + ' &rarr; ' + td.location + '</div>';
+  document.getElementById('tsFinalList').innerHTML =
+    '<div class="card-title">Vehicles to Register (' + TS.vehicles.length + ')</div>'
+    + TS.vehicles.map(function(v,i) {
+        return '<div class="veh-mini" style="cursor:default">'
+             + '<div><div class="veh-mini-model">' + v.model + ' ' + v.variant + ' <span style="color:var(--red)">' + v.suffix + '</span></div>'
+             + '<div class="veh-mini-chassis">' + v.chassis + ' &middot; ' + v.colour + '</div></div>'
+             + '<span style="font-weight:800;color:var(--green)">#' + (i+1) + '</span></div>';
+      }).join('');
+}
+
+async function submitTrailer() {
+  var td = TS.details;
+  var btn = document.getElementById('tsBtnNext');
+  btn.disabled = true;
+  showLoader('Registering ' + TS.vehicles.length + ' vehicles...');
+  var ok = 0, fail = 0;
+  for (var i = 0; i < TS.vehicles.length; i++) {
+    var v = TS.vehicles[i];
+    try {
+      await callAPI({
+        action:'addNewVehicle',
+        chassis:v.chassis, model:v.model, variant:v.variant, fuel:v.fuel, colour:v.colour, interior:v.interior, suffix:v.suffix,
+        dispatch:v.dispatch||today(), arrival:today(), location:td.location, status:'In Stock',
+        source:td.source, coDealerName:td.coDealerName, trailerNo:td.trailerNo,
+        transporter:td.transporter, driverName:td.driverName, driverMobile:td.driverMobile,
+        reportingDateTime:td.reportingDT, receivedBy:td.receivedBy,
+        gateEntry:true, remarks:v.remarks||td.remarks||'', timestamp:nowISO()
+      });
+      ok++;
+    } catch(e) { fail++; }
+  }
+  btn.disabled = false;
+  hideLoader();
+  closeTrailer();
+  showSuccess('&#128667;', ok + ' Vehicle' + (ok>1?'s':'') + ' Registered!',
+    'Trailer ' + td.trailerNo + ' — ' + td.location + (fail?' | '+fail+' failed':''), [
+    {k:'Trailer',v:td.trailerNo},{k:'Transporter',v:td.transporter},
+    {k:'Driver',v:td.driverName+' '+td.driverMobile},
+    {k:'Source',v:td.source+(td.coDealerName?' — '+td.coDealerName:'')},
+    {k:'Location',v:td.location},{k:'Registered',v:String(ok)}
+  ]);
+  loadAllStock();
+}
+
+// ═══════════════════════════════════════════════════════
+// STOCK AUDIT
+// ═══════════════════════════════════════════════════════
+function openAuditSetup() {
+  if (!canAudit()) return;
+  AU = { scope:'ALL', items:[], filter:'ALL', auditor:currentUser.name, startedAt:'' };
+  ['ALL','Stockyard','Workshop','Showroom'].forEach(function(s) {
+    var el = document.getElementById('auScope_' + s);
+    if (el) el.classList.toggle('active', s === 'ALL');
+  });
+  document.getElementById('auAuditorName').value = currentUser.name;
+  renderAuditSetupSummary();
+  openOverlay('auditSetupOverlay');
+}
+
+function auSetScope(el, scope) {
+  AU.scope = scope;
+  ['ALL','Stockyard','Workshop','Showroom'].forEach(function(s) {
+    var t = document.getElementById('auScope_' + s);
+    if (t) t.classList.remove('active');
+  });
+  el.classList.add('active');
+  renderAuditSetupSummary();
+}
+
+function renderAuditSetupSummary() {
+  var expected = getExpectedAuditStock();
+  var label = AU.scope === 'ALL' ? 'Full Dealership' : AU.scope;
+  document.getElementById('auSetupSummary').innerHTML =
+    '<div style="font-size:11px;font-weight:700;color:var(--gray-400);text-transform:uppercase;letter-spacing:0.6px">Audit Scope</div>'
+    + '<div style="font-size:16px;font-weight:800;color:var(--dark);margin-top:3px">' + label + '</div>'
+    + '<div style="font-size:13px;color:var(--gray-600);margin-top:6px">' + expected.length + ' vehicle' + (expected.length!==1?'s':'') + ' expected to be physically verified</div>';
+}
+
+function getExpectedAuditStock() {
+  return allStock.filter(function(v) {
+    if (v.status === 'Delivered' || v.status === 'In Transit' || v.status === 'TKM Billed') return false;
+    if (AU.scope === 'ALL') return true;
+    return v.location === AU.scope;
+  });
+}
+
+function startAudit() {
+  var expected = getExpectedAuditStock();
+  if (!expected.length) { alert('No vehicles found in this scope to audit.'); return; }
+
+  AU.items = expected.map(function(v) {
+    return {
+      chassis: v.chassis, model: v.model, variant: v.variant, suffix: v.suffix||'',
+      colour: v.colour||'', location: v.status==='In Transit'?'In Transit':(v.location||'Unknown'),
+      status: 'PENDING', // PENDING | FOUND
+      tickedAt: ''
+    };
+  });
+  AU.extras = []; // chassis scanned/entered that weren't in expected list
+  AU.startedAt = nowISO();
+  AU.filter = 'ALL';
+
+  closeOverlay('auditSetupOverlay');
+  document.getElementById('auTitle').textContent = (AU.scope==='ALL'?'Full Dealership':AU.scope) + ' Audit';
+  document.getElementById('auSubtitle').textContent = 'Started by ' + currentUser.name + ' · ' + new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+  document.getElementById('auManualChassis').value = '';
+  hideAlert('auManualErr');
+  document.querySelectorAll('#auditScreen .filter-chip').forEach(function(c){ c.classList.remove('active'); });
+  document.querySelector('#auditScreen .filter-chip').classList.add('active');
+
+  renderAuditList();
+  document.getElementById('auditScreen').style.display = 'flex';
+}
+
+function confirmExitAudit() {
+  if (!AU.items.length) { document.getElementById('auditScreen').style.display = 'none'; return; }
+  var found = AU.items.filter(function(i){ return i.status==='FOUND'; }).length;
+  if (found === 0 || confirm('Audit in progress (' + found + '/' + AU.items.length + ' found). Exit without submitting? Progress will be lost.')) {
+    document.getElementById('auditScreen').style.display = 'none';
+  }
+}
+
+function auSetFilter(filter, el) {
+  AU.filter = filter;
+  document.querySelectorAll('#auditScreen .filter-chip').forEach(function(c){ c.classList.remove('active'); });
+  if (el) el.classList.add('active');
+  renderAuditList();
+}
+
+function auManualTick() {
+  var chassis = document.getElementById('auManualChassis').value.trim().toUpperCase();
+  if (!chassis) { showAlert('auManualErr','⚠️ Enter a chassis number.'); return; }
+  hideAlert('auManualErr');
+  tickAuditChassis(chassis);
+  document.getElementById('auManualChassis').value = '';
+}
+
+function tickAuditChassis(chassis) {
+  var item = AU.items.find(function(i){ return i.chassis === chassis; });
+  if (item) {
+    if (item.status === 'FOUND') {
+      // already found — just flash status, no error needed
+    } else {
+      item.status = 'FOUND';
+      item.tickedAt = new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+    }
+  } else {
+    // Not in expected list for this scope — check if it exists elsewhere in allStock
+    var existsElsewhere = allStock.find(function(v){ return v.chassis === chassis; });
+    if (!AU.extras.find(function(e){ return e.chassis === chassis; })) {
+      AU.extras.push({
+        chassis: chassis,
+        model: existsElsewhere ? existsElsewhere.model : '',
+        variant: existsElsewhere ? existsElsewhere.variant : '',
+        note: existsElsewhere ? ('System shows this at ' + (existsElsewhere.location||existsElsewhere.status||'Unknown')) : 'Not found in system records',
+        tickedAt: new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})
+      });
+    }
+  }
+  renderAuditList();
+}
+
+function auRemoveExtra(chassis) {
+  AU.extras = AU.extras.filter(function(e){ return e.chassis !== chassis; });
+  renderAuditList();
+}
+
+function auUnmark(chassis) {
+  var item = AU.items.find(function(i){ return i.chassis === chassis; });
+  if (item) { item.status = 'PENDING'; item.tickedAt = ''; }
+  renderAuditList();
+}
+
+function renderAuditList() {
+  var found   = AU.items.filter(function(i){ return i.status==='FOUND'; }).length;
+  var pending = AU.items.length - found;
+  var extras  = (AU.extras||[]).length;
+
+  document.getElementById('auFoundCount').textContent   = found;
+  document.getElementById('auPendingCount').textContent = pending;
+  document.getElementById('auExtraCount').textContent   = extras;
+  document.getElementById('auTotalCount').textContent   = AU.items.length;
+
+  var html = '';
+
+  if (AU.filter === 'EXTRA') {
+    if (!extras) {
+      html = emptyHtml('','No unexpected vehicles scanned','');
+    } else {
+      AU.extras.forEach(function(e) {
+        html += '<div class="chassis-card" style="border-left:3px solid var(--red)">'
+              + '<div class="cc-top"><div class="cc-info">'
+              + '<div class="cc-chassis">' + e.chassis + '</div>'
+              + '<div class="cc-suffix">' + (e.model?e.model+' '+e.variant:'Unknown vehicle') + '</div>'
+              + '</div><span class="pill" style="background:#FDE8EA;color:var(--red)">' + e.tickedAt + '</span></div>'
+              + '<div style="font-size:11px;color:var(--gray-400);margin-top:6px">' + e.note + '</div>'
+              + '<div class="cc-buttons"><button class="act-btn act-free" onclick="auRemoveExtra(\'' + e.chassis + '\')">&#10005; Remove</button></div>'
+              + '</div>';
+      });
+    }
+    document.getElementById('auditList').innerHTML = html;
+    return;
+  }
+
+  var items = AU.items;
+  if (AU.filter === 'PENDING') items = items.filter(function(i){ return i.status==='PENDING'; });
+  if (AU.filter === 'FOUND')   items = items.filter(function(i){ return i.status==='FOUND'; });
+
+  if (!items.length) {
+    html = emptyHtml('✅', AU.filter==='PENDING' ? 'All vehicles found!' : 'Nothing here', '');
+  } else {
+    items.forEach(function(v) {
+      var isFound = v.status === 'FOUND';
+      html += '<div class="chassis-card" style="' + (isFound ? 'border-left:3px solid var(--green)' : '') + '">'
+            + '<div class="cc-top"><div class="cc-info">'
+            + '<div class="cc-chassis">' + v.chassis + '</div>'
+            + '<div class="cc-suffix">' + v.model + ' ' + v.variant + ' ' + v.suffix + '</div>'
+            + '</div>'
+            + (isFound
+                ? '<span class="pill pill-available">&#9989; ' + v.tickedAt + '</span>'
+                : '<span class="pill" style="background:var(--gray-100);color:var(--gray-600)">Pending</span>')
+            + '</div>'
+            + '<div style="font-size:11px;color:var(--gray-400);margin-top:4px">' + v.colour + ' &middot; ' + v.location + '</div>'
+            + '<div class="cc-buttons">'
+            + (isFound
+                ? '<button class="act-btn act-free" onclick="auUnmark(\'' + v.chassis + '\')">&#10005; Unmark</button>'
+                : '<button class="act-btn act-move" style="background:var(--green)" onclick="tickAuditChassis(\'' + v.chassis + '\')">&#9989; Mark Found</button>')
+            + '</div></div>';
+    });
+  }
+  document.getElementById('auditList').innerHTML = html;
+}
+
+function finishAudit() {
+  var found    = AU.items.filter(function(i){ return i.status==='FOUND'; });
+  var missing  = AU.items.filter(function(i){ return i.status==='PENDING'; });
+  var extras   = AU.extras || [];
+
+  if (missing.length > 0 && !confirm(missing.length + ' vehicle(s) still pending / not found. Submit audit anyway? Missing vehicles will be flagged for follow-up.')) {
+    return;
+  }
+
+  document.getElementById('auditScreen').style.display = 'none';
+  showLoader('Submitting audit...');
+
+  var payload = {
+    action:'submitAudit',
+    scope: AU.scope,
+    auditor: currentUser.name,
+    role: currentUser.role,
+    startedAt: AU.startedAt,
+    finishedAt: nowISO(),
+    totalExpected: AU.items.length,
+    foundCount: found.length,
+    missingCount: missing.length,
+    extraCount: extras.length,
+    foundList: found.map(function(v){ return v.chassis; }),
+    missingList: missing.map(function(v) { return { chassis:v.chassis, model:v.model, variant:v.variant, location:v.location }; }),
+    extraList: extras.map(function(e) { return { chassis:e.chassis, note:e.note }; }),
+    timestamp: nowISO()
+  };
+
+  callAPI(payload).then(function(r) {
+    hideLoader();
+    showAuditResult(found, missing, extras, r && r.success);
+  }).catch(function(e) {
+    hideLoader();
+    showAuditResult(found, missing, extras, false, e.message);
+  });
+}
+
+function showAuditResult(found, missing, extras, saved, errMsg) {
+  var pct = (found.length + missing.length) > 0 ? Math.round(found.length / (found.length + missing.length) * 100) : 100;
+  var html = '<div class="card" style="background:linear-gradient(135deg,var(--dark),var(--navy));border:none;text-align:center">'
+    + '<div style="color:white;font-size:42px;font-weight:900">' + pct + '%</div>'
+    + '<div style="color:rgba(255,255,255,0.6);font-size:12px;text-transform:uppercase;letter-spacing:0.6px;margin-top:2px">Vehicles Verified</div>'
+    + '</div>';
+
+  html += '<div class="stat-grid">'
+    + '<div class="stat-card" style="cursor:default"><div class="stat-num" style="color:var(--green)">' + found.length + '</div><div class="stat-label">&#9989; Found</div></div>'
+    + '<div class="stat-card" style="cursor:default"><div class="stat-num" style="color:var(--red)">' + missing.length + '</div><div class="stat-label">&#10071; Missing</div></div>'
+    + '</div>';
+
+  if (extras.length) {
+    html += '<div class="card"><div class="card-title">&#10071; Unexpected Vehicles (' + extras.length + ')</div>';
+    extras.forEach(function(e) {
+      html += '<div class="recent-item"><div class="recent-dot" style="background:var(--red)"></div>'
+            + '<div class="recent-info"><div class="recent-chassis">' + e.chassis + '</div><div class="recent-detail">' + e.note + '</div></div></div>';
+    });
+    html += '</div>';
+  }
+
+  if (missing.length) {
+    html += '<div class="card"><div class="card-title">&#10071; Missing Vehicles (' + missing.length + ')</div>';
+    missing.forEach(function(v) {
+      html += '<div class="recent-item"><div class="recent-dot" style="background:var(--red)"></div>'
+            + '<div class="recent-info"><div class="recent-chassis">' + v.chassis + '</div>'
+            + '<div class="recent-detail">' + v.model + ' ' + v.variant + ' &middot; expected at ' + v.location + '</div></div></div>';
+    });
+    html += '</div>';
+  }
+
+  html += saved
+    ? '<div class="alert alert-ok" style="display:flex;margin-top:4px">✅ Audit record saved successfully.</div>'
+    : '<div class="alert alert-err" style="display:flex;margin-top:4px">⚠️ Audit completed but could not be saved to server' + (errMsg?(': '+errMsg):'') + '. Results shown above are still valid for this session.</div>';
+
+  document.getElementById('auResultBody').innerHTML = html;
+  openOverlay('auditResultOverlay');
+}
+
+async function loadAuditHistory() {
+  var el = document.getElementById('auHistoryBody');
+  el.innerHTML = emptyHtml('🔄','Loading...','');
+  try {
+    var d = await callGET({ action:'getAuditHistory' });
+    if (!d.success || !d.audits || !d.audits.length) {
+      el.innerHTML = emptyHtml('','No audits recorded yet','');
+      return;
+    }
+    var html = '';
+    d.audits.forEach(function(a) {
+      var pct = a.totalExpected > 0 ? Math.round(a.foundCount / a.totalExpected * 100) : 100;
+      html += '<div class="chassis-card"><div class="cc-top"><div class="cc-info">'
+            + '<div class="cc-chassis" style="font-family:inherit;font-size:14px">' + (a.scope==='ALL'?'Full Dealership':a.scope) + '</div>'
+            + '<div class="cc-suffix">' + a.auditor + ' &middot; ' + (a.finishedAt||'') + '</div>'
+            + '</div><span class="pill" style="background:' + (pct===100?'#ECFDF5':'#FEF3C7') + ';color:' + (pct===100?'var(--green)':'#92400E') + '">' + pct + '%</span></div>'
+            + '<div style="font-size:11px;color:var(--gray-400);margin-top:6px">Found ' + a.foundCount + ' / ' + a.totalExpected + (a.missingCount?' &middot; ' + a.missingCount + ' missing':'') + '</div>'
+            + '</div>';
+    });
+    el.innerHTML = html;
+  } catch(e) { el.innerHTML = emptyHtml('⚠️','Could not load history',''); }
+}
+
+// ═══════════════════════════════════════════════════════
+// STAFF MANAGEMENT
+// ═══════════════════════════════════════════════════════
+function openProfile() {
+  if (!currentUser) return;
+  document.getElementById('profileName').textContent     = currentUser.name;
+  document.getElementById('profileRoleText').textContent = currentUser.role + ' — Planet Toyota';
+  var sl = document.getElementById('profileStaffLink');
+  if (sl) sl.classList.toggle('hidden', !canManageStaff());
+  var al = document.getElementById('profileAuditLink');
+  if (al) al.classList.toggle('hidden', !canAudit());
+  openOverlay('profileOverlay');
+}
+
+function openStaff() {
+  resetSfForm();
+  loadStaffList();
+  openOverlay('staffOverlay');
+}
+
+async function loadStaffList() {
+  var el = document.getElementById('staffList');
+  el.innerHTML = emptyHtml('','Loading...','');
+  try {
+    var data = await callGET({ action:'getStaffList' });
+    if (!data.success || !data.staff || !data.staff.length) {
+      el.innerHTML = emptyHtml('','No staff found','Add staff below');
+      return;
+    }
+    var COLORS = ['#EB0A1E','#1A1F3A','#059669','#2563EB','#F97316','#7C3AED'];
+    var RC     = {owner:'#F59E0B','sales manager':'#2563EB','service manager':'#059669',edp:'#7C3AED','sales team leader':'#F97316','yard staff':'#22C55E'};
+    var html   = '';
+    data.staff.forEach(function(s, i) {
+      var ini      = s.name.split(' ').map(function(w){return w[0];}).join('').substring(0,2).toUpperCase();
+      var ac       = COLORS[i % COLORS.length];
+      var rc       = RC[(s.role||'').toLowerCase()] || '#888';
+      var inactive = (s.status||'').toLowerCase() === 'inactive';
+      html += '<div class="staff-item' + (inactive?' staff-inactive':'') + '">'
+            + '<div class="staff-avatar" style="background:' + ac + '">' + ini + '</div>'
+            + '<div class="staff-info"><div class="staff-name">' + s.name + '</div>'
+            + '<div class="staff-meta"><span class="pill" style="background:' + rc + ';color:white">' + s.role + '</span>'
+            + '<span style="font-size:10px;font-weight:700;color:' + (inactive?'#aaa':'var(--green)') + '">' + (inactive?'Inactive':'Active') + '</span></div></div>'
+            + '<div class="staff-actions">'
+            + '<button class="sa-btn sa-edit" onclick="editSf(' + s.row + ',\'' + s.name.replace(/'/g,"\\'") + '\',\'' + s.role.replace(/'/g,"\\'") + '\')">&#9999;</button>'
+            + (inactive
+                ? '<button class="sa-btn sa-react" onclick="toggleSfStatus(' + s.row + ',\'Active\',\'' + s.name.replace(/'/g,"\\'") + '\')">&#9989;</button>'
+                : '<button class="sa-btn sa-deact" onclick="toggleSfStatus(' + s.row + ',\'Inactive\',\'' + s.name.replace(/'/g,"\\'") + '\')">&#128683;</button>')
+            + '</div></div>';
+    });
+    el.innerHTML = html;
+  } catch(e) { el.innerHTML = emptyHtml('','Error: '+e.message,''); }
+}
+
+function editSf(row, name, role) {
+  document.getElementById('sfTitle').textContent   = 'Edit Staff';
+  document.getElementById('sfName').value          = name;
+  document.getElementById('sfRole').value          = role;
+  document.getElementById('sfPin').value           = '';
+  document.getElementById('sfPinLabel').textContent= 'New PIN (leave blank to keep)';
+  document.getElementById('sfRow').value           = row;
+  hideAlert('sfErr'); hideAlert('sfOk');
+}
+
+function resetSfForm() {
+  document.getElementById('sfTitle').textContent    = 'Add Staff';
+  document.getElementById('sfName').value           = '';
+  document.getElementById('sfRole').value           = '';
+  document.getElementById('sfPin').value            = '';
+  document.getElementById('sfPinLabel').textContent = 'PIN *';
+  document.getElementById('sfRow').value            = '';
+  hideAlert('sfErr'); hideAlert('sfOk');
+}
+
+async function saveStaff() {
+  var name   = document.getElementById('sfName').value.trim();
+  var role   = document.getElementById('sfRole').value;
+  var pin    = document.getElementById('sfPin').value.replace(/[^0-9]/g,'');
+  var row    = document.getElementById('sfRow').value;
+  var isEdit = !!row;
+  hideAlert('sfErr'); hideAlert('sfOk');
+  if (!name) { showAlert('sfErr','⚠️ Name required.'); return; }
+  if (!role) { showAlert('sfErr','⚠️ Role required.'); return; }
+  if (!isEdit && (!pin||pin.length!==4)) { showAlert('sfErr','⚠️ 4-digit PIN required.'); return; }
+  if (pin && pin.length!==4) { showAlert('sfErr','⚠️ PIN must be 4 digits.'); return; }
+  showLoader(isEdit?'Updating...':'Adding...');
+  try {
+    var payload = isEdit
+      ? { action:'editStaff', row:parseInt(row), name:name, role:role, pin:pin||null }
+      : { action:'addStaff',  name:name, role:role, pin:pin };
+    var r = await callAPI(payload);
+    hideLoader();
+    if (r.success) {
+      showAlert('sfOk', isEdit ? '✅ Updated!' : '✅ ' + name + ' added!');
+      resetSfForm();
+      setTimeout(function(){ hideAlert('sfOk'); }, 3000);
+      loadStaffList();
+    } else { showAlert('sfErr','❌ ' + (r.error||'Failed')); }
+  } catch(e) { hideLoader(); showAlert('sfErr','❌ '+e.message); }
+}
+
+async function toggleSfStatus(row, status, name) {
+  if (!confirm((status==='Inactive'?'Deactivate':'Reactivate')+' '+name+'?')) return;
+  showLoader('Updating...');
+  try {
+    var r = await callAPI({ action:'editStaff', row:parseInt(row), name:name, status:status });
+    hideLoader();
+    if (r.success) loadStaffList();
+    else alert('Failed: '+(r.error||'Unknown'));
+  } catch(e) { hideLoader(); alert('Error: '+e.message); }
+}
+
+// ═══════════════════════════════════════════════════════
+// CHANGE PIN
+// ═══════════════════════════════════════════════════════
+function openChangePIN() { openOverlay('changePinOverlay'); }
+
+async function confirmChangePIN() {
+  var old = document.getElementById('cpOld').value;
+  var nw  = document.getElementById('cpNew').value;
+  var cnf = document.getElementById('cpCnf').value;
+  hideAlert('cpErr'); hideAlert('cpOk');
+  if (!old||old.length!==4) { showAlert('cpErr','⚠️ Current PIN must be 4 digits.'); return; }
+  if (!nw||nw.length!==4)   { showAlert('cpErr','⚠️ New PIN must be 4 digits.'); return; }
+  if (nw !== cnf)            { showAlert('cpErr','⚠️ New PINs do not match.'); return; }
+  showLoader('Updating PIN...');
+  try {
+    var r = await callAPI({ action:'changePin', name:currentUser.name, oldPin:old, newPin:nw, timestamp:nowISO() });
+    hideLoader();
+    if (r.success) {
+      showAlert('cpOk','✅ PIN updated successfully!');
+      ['cpOld','cpNew','cpCnf'].forEach(function(id){ document.getElementById(id).value=''; });
+    } else { showAlert('cpErr','❌ '+(r.error||'Failed')); }
+  } catch(e) { hideLoader(); showAlert('cpErr','❌ '+e.message); }
+}
+
+// ═══════════════════════════════════════════════════════
+// STARTUP
+// ═══════════════════════════════════════════════════════
+window.onload = function() {
+  try {
+    var saved = JSON.parse(localStorage.getItem('pt_session') || 'null');
+    if (saved && saved.loginTime && (Date.now() - saved.loginTime) < 30 * 60 * 1000) {
+      currentUser = saved;
+      try { recentMoves = JSON.parse(localStorage.getItem('pt_recent') || '[]'); } catch(e) {}
+      bootApp();
+      return;
+    }
+  } catch(e) {}
+  try { recentMoves = JSON.parse(localStorage.getItem('pt_recent') || '[]'); } catch(e) {}
+  loadStaffNames();
+};
+</script>
+
+<!-- AUDIT SETUP OVERLAY -->
+<div class="overlay" id="auditSetupOverlay" onclick="if(event.target===this)closeOverlay('auditSetupOverlay')" style="z-index:850">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+      <div><div class="sheet-title">&#128269; Start Stock Audit</div><div class="sheet-sub">Physically verify parked vehicles</div></div>
+      <button class="sheet-close" onclick="closeOverlay('auditSetupOverlay')">&#10005;</button>
+    </div>
+    <div class="sheet-body">
+      <div class="alert alert-info">An audit checks vehicles physically present against system records. You can scan chassis or tick manually from the list.</div>
+      <div style="text-align:right;margin-bottom:4px"><button class="btn-icon" style="background:var(--gray-100);color:var(--dark);width:auto;border-radius:var(--r-xs);padding:6px 12px;font-size:11px;font-weight:700" onclick="closeOverlay('auditSetupOverlay');loadAuditHistory();openOverlay('auditHistoryOverlay')">&#128203; Past Audits</button></div>
+      <div class="input-group">
+        <label class="input-label">Audit Scope *</label>
+        <div class="loc-grid">
+          <div class="loc-tile active" id="auScope_ALL" onclick="auSetScope(this,'ALL')"><div class="loc-tile-icon">&#127970;</div><div class="loc-tile-name">Full Dealership</div></div>
+          <div class="loc-tile" id="auScope_Stockyard" onclick="auSetScope(this,'Stockyard')"><div class="loc-tile-icon">&#128338;</div><div class="loc-tile-name">Stockyard</div></div>
+          <div class="loc-tile" id="auScope_Workshop" onclick="auSetScope(this,'Workshop')"><div class="loc-tile-icon">&#128295;</div><div class="loc-tile-name">Workshop</div></div>
+          <div class="loc-tile" id="auScope_Showroom" onclick="auSetScope(this,'Showroom')"><div class="loc-tile-icon">&#127970;</div><div class="loc-tile-name">Showroom</div></div>
+        </div>
+      </div>
+      <div class="input-group">
+        <label class="input-label">Auditor Name</label>
+        <input class="input-field" id="auAuditorName" type="text" placeholder="Defaults to your name" disabled>
+      </div>
+      <div id="auSetupSummary" class="card" style="background:var(--gray-50);margin-bottom:0"></div>
+      <button class="btn btn-dark mt-12" onclick="startAudit()">&#9989; Start Audit</button>
+    </div>
+  </div>
+</div>
+
+<!-- ACTIVE AUDIT SCREEN -->
+<div id="auditScreen" style="position:fixed;inset:0;background:var(--gray-100);z-index:870;display:none;flex-direction:column">
+  <div class="ts-header" style="background:var(--dark)">
+    <button class="ts-back" onclick="confirmExitAudit()">&#8592;</button>
+    <div style="flex:1">
+      <div class="ts-title" id="auTitle" style="font-size:15px">Stock Audit</div>
+      <div style="color:rgba(255,255,255,0.5);font-size:11px;margin-top:1px" id="auSubtitle"></div>
+    </div>
+    <button class="btn-icon" style="background:var(--green)" onclick="openScanner('auditScanTarget')">&#128247;</button>
+  </div>
+
+  <!-- Progress stat bar -->
+  <div style="display:flex;background:white;border-bottom:1px solid var(--border);flex-shrink:0">
+    <div style="flex:1;text-align:center;padding:10px 4px;border-right:1px solid var(--gray-100)">
+      <div style="font-size:20px;font-weight:900;color:var(--green)" id="auFoundCount">0</div>
+      <div style="font-size:9px;color:var(--gray-400);font-weight:700;text-transform:uppercase">Found</div>
+    </div>
+    <div style="flex:1;text-align:center;padding:10px 4px;border-right:1px solid var(--gray-100)">
+      <div style="font-size:20px;font-weight:900;color:var(--gray-400)" id="auPendingCount">0</div>
+      <div style="font-size:9px;color:var(--gray-400);font-weight:700;text-transform:uppercase">Pending</div>
+    </div>
+    <div style="flex:1;text-align:center;padding:10px 4px;border-right:1px solid var(--gray-100)">
+      <div style="font-size:20px;font-weight:900;color:var(--red)" id="auExtraCount">0</div>
+      <div style="font-size:9px;color:var(--gray-400);font-weight:700;text-transform:uppercase">Unexpected</div>
+    </div>
+    <div style="flex:1;text-align:center;padding:10px 4px">
+      <div style="font-size:20px;font-weight:900;color:var(--dark)" id="auTotalCount">0</div>
+      <div style="font-size:9px;color:var(--gray-400);font-weight:700;text-transform:uppercase">Total</div>
+    </div>
+  </div>
+
+  <!-- Manual chassis entry -->
+  <div style="padding:12px 14px;background:white;border-bottom:1px solid var(--border);flex-shrink:0">
+    <div style="display:flex;gap:8px">
+      <input class="input-field" id="auManualChassis" type="text" placeholder="Type chassis to tick" style="text-transform:uppercase;letter-spacing:1px;flex:1" oninput="this.value=this.value.toUpperCase()" onkeypress="if(event.key==='Enter')auManualTick()">
+      <button class="btn btn-green btn-sm" style="width:auto;padding:0 16px" onclick="auManualTick()">&#9989; Tick</button>
+    </div>
+    <div class="alert alert-err" id="auManualErr" style="margin-top:8px;margin-bottom:0"></div>
+  </div>
+
+  <!-- Filter chips -->
+  <div class="filter-row" style="padding:10px 14px 0;margin-bottom:0;background:white;border-bottom:1px solid var(--border)">
+    <button class="filter-chip active" onclick="auSetFilter('ALL',this)">All</button>
+    <button class="filter-chip" onclick="auSetFilter('PENDING',this)">&#9202; Pending</button>
+    <button class="filter-chip" onclick="auSetFilter('FOUND',this)">&#9989; Found</button>
+    <button class="filter-chip" onclick="auSetFilter('EXTRA',this)">&#10071; Unexpected</button>
+  </div>
+
+  <div style="flex:1;overflow-y:auto;padding:12px 14px 90px" id="auditList"></div>
+
+  <div style="position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:white;border-top:1px solid var(--border);padding:12px 14px">
+    <button class="btn btn-dark" onclick="finishAudit()">&#127919; Finish Audit &amp; Submit</button>
+  </div>
+</div>
+
+<!-- AUDIT RESULT OVERLAY -->
+<div class="overlay" id="auditResultOverlay" onclick="if(event.target===this)closeOverlay('auditResultOverlay')" style="z-index:880">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+      <div class="sheet-title">&#128203; Audit Summary</div>
+      <button class="sheet-close" onclick="closeOverlay('auditResultOverlay')">&#10005;</button>
+    </div>
+    <div class="sheet-body" id="auResultBody"></div>
+  </div>
+</div>
+
+<!-- AUDIT HISTORY OVERLAY -->
+<div class="overlay" id="auditHistoryOverlay" onclick="if(event.target===this)closeOverlay('auditHistoryOverlay')" style="z-index:850">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+      <div class="sheet-title">&#128203; Past Audits</div>
+      <button class="sheet-close" onclick="closeOverlay('auditHistoryOverlay')">&#10005;</button>
+    </div>
+    <div class="sheet-body" id="auHistoryBody"></div>
+  </div>
+</div>
+
+<!-- SCANNER MODAL -->
+<div class="overlay" id="scannerOverlay" style="z-index:950;align-items:center" onclick="if(event.target===this)closeScanner()">
+  <div style="background:#000;border-radius:var(--r);width:92%;max-width:380px;overflow:hidden">
+    <div style="padding:12px 16px;display:flex;align-items:center;justify-content:space-between;background:#111">
+      <div style="color:white;font-size:14px;font-weight:700">📷 Scan Chassis QR / Barcode</div>
+      <button class="sheet-close" onclick="closeScanner()">&#10005;</button>
+    </div>
+    <div style="position:relative;background:#000">
+      <video id="scannerVideo" style="width:100%;display:block;max-height:340px;object-fit:cover"></video>
+      <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none">
+        <div style="width:75%;aspect-ratio:1;border:3px solid #22C55E;border-radius:12px;box-shadow:0 0 0 9999px rgba(0,0,0,0.4)"></div>
+      </div>
+    </div>
+    <div style="padding:12px 16px;background:#111">
+      <div id="scannerStatus" style="color:#9CA3AF;font-size:12px;text-align:center">Point camera at chassis QR / barcode</div>
+      <button class="btn btn-gray btn-sm mt-8" onclick="closeScanner()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
