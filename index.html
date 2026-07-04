@@ -392,22 +392,20 @@ const ROLE = { EXEC:"Guest Experience Manager", TL:"Team Leader", SM:"Sales Mana
 
 const DEFAULT_STAFF = [
   // Owner
-  { id:"u01", name:"Piyush (Owner)",    role:ROLE.OWNER, pin:"6022", teamId:null },
-  // GM Sales
-  { id:"u02", name:"Vikas Kumar",       role:ROLE.GM,    pin:"9090", teamId:null },
+  { id:"u01", name:"Piyush Sanghi",    role:ROLE.OWNER, pin:"6022", teamId:null },
   // Sales Manager
-  { id:"u03", name:"Nilesh Kumar",      role:ROLE.SM,    pin:"1331", teamId:null },
+  { id:"u02", name:"Nilesh Kumar",      role:ROLE.SM,    pin:"1331", teamId:null },
   // Team Leaders
-  { id:"u04", name:"Ashok Yadav",       role:ROLE.TL,    pin:"9999", teamId:"T1" },
-  { id:"u05", name:"Pritam Yadav",      role:ROLE.TL,    pin:"2222", teamId:"T2" },
+  { id:"u03", name:"Ashok Yadav",       role:ROLE.TL,    pin:"9999", teamId:"T1" },
+  { id:"u04", name:"Pritam Yadav",      role:ROLE.TL,    pin:"2222", teamId:"T2" },
   // Team 1 Executives
-  { id:"u06", name:"Surender Kumar",    role:ROLE.EXEC,  pin:"6699", teamId:"T1" },
-  { id:"u07", name:"Nitin Kumar",       role:ROLE.EXEC,  pin:"7799", teamId:"T1" },
-  { id:"u08", name:"Amit Kumar",        role:ROLE.EXEC,  pin:"8899", teamId:"T1" },
+  { id:"u05", name:"Surender Kumar",    role:ROLE.EXEC,  pin:"6699", teamId:"T1" },
+  { id:"u06", name:"Nitin Kumar",       role:ROLE.EXEC,  pin:"7799", teamId:"T1" },
+  { id:"u07", name:"Amit Kumar",        role:ROLE.EXEC,  pin:"8899", teamId:"T1" },
   // Team 2 Executives
-  { id:"u09", name:"Bishan Saini",      role:ROLE.EXEC,  pin:"5522", teamId:"T2" },
-  { id:"u10", name:"Vikas Kumar",       role:ROLE.EXEC,  pin:"4422", teamId:"T2" },
-  { id:"u11", name:"Navneet Singh",     role:ROLE.EXEC,  pin:"3322", teamId:"T2" },
+  { id:"u08", name:"Bishan Saini",      role:ROLE.EXEC,  pin:"5522", teamId:"T2" },
+  { id:"u09", name:"Vikas Kumar",       role:ROLE.EXEC,  pin:"4422", teamId:"T2" },
+  { id:"u10", name:"Navneet Singh",     role:ROLE.EXEC,  pin:"3322", teamId:"T2" },
 ];
 
 const INDIA_STATES = [
@@ -1493,7 +1491,7 @@ function confirmLeaveForm() {
 
 function initFormState() {
   formState={
-    cName:"",cPhone:"",cCity:"",mfgYear:new Date().getFullYear(),
+    cName:"",cPhone:"",cCity:"",mfgYear:new Date().getFullYear(),qty:1,
     model:"",variant:"",colour:"",interior:"",suffix:"",fuelType:"",
     exShowroom:0,regType:"Personal",custState:"Haryana",
     insurance:0,insuranceType:"",rto:0,
@@ -1529,6 +1527,13 @@ function buildFormHTML() {
         <input class="field-input" id="f-cPhone" type="tel" maxlength="10" placeholder="10-digit" oninput="formState.cPhone=this.value" /></div>
       <div class="field-half"><label class="field-label">City / Village</label>
         <input class="field-input" id="f-cCity" placeholder="Narnaul..." oninput="formState.cCity=this.value" /></div>
+    </div>
+
+    <label class="field-label">Number of Units</label>
+    <div style="display:flex;gap:8px;margin-bottom:12px;">
+      ${[1,2,3,4,5].map(n=>`<button type="button"
+        style="flex:1;padding:10px 0;border-radius:8px;border:1.5px solid ${formState.qty===n?'#EB0A1E':'#ddd'};background:${formState.qty===n?'#fff0f0':'#fafafa'};color:${formState.qty===n?'#EB0A1E':'#555'};font-weight:700;font-size:14px;cursor:pointer;font-family:inherit;"
+        onclick="formState.qty=${n};buildFormHTML();">${n}</button>`).join("")}
     </div>
 
     <div class="form-section">🚗 Vehicle Details</div>
@@ -1823,6 +1828,7 @@ function generateQuote() {
   const q={
     id:genId(),date:new Date().toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric"}),
     savedAt:Date.now(),mfgYear:formState.mfgYear,
+    qty:formState.qty||1,
     cust:{name:formState.cName,phone:formState.cPhone,city:formState.cCity},
     veh:{model:formState.model,variant:formState.variant,colour:formState.colour,interior:formState.interior,suffix:formState.suffix,fuelType:formState.fuelType},
     reg:{type:formState.regType,state:formState.custState},
@@ -1885,11 +1891,11 @@ function buildPreviewHTML(q) {
             <img src="data:image/jpeg;base64,${document.getElementById('img-awesome').dataset.b64}" style="width:64px;height:auto;display:block;" />
           </div>
           <div style="flex:1;text-align:center;">
-            <div style="font-size:28px;font-weight:900;color:#EB0A1E;letter-spacing:3px;text-transform:uppercase;text-decoration:underline;text-decoration-color:#EB0A1E;line-height:1.1;">PLANET TOYOTA</div>
+            <div style="font-size:28px;font-weight:900;color:#EB0A1E;letter-spacing:3px;text-transform:uppercase;line-height:1.1;">PLANET TOYOTA</div>
             <div style="font-size:11.5px;color:#444;margin-top:3px;">Sanghi Autoplex Private Limited</div>
             <div style="font-size:12.5px;font-weight:700;color:#111;margin-top:2px;">Auth. Dealer: Toyota Kirloskar Motor Pvt. Ltd.</div>
             <div style="font-size:11px;color:#555;margin-top:1px;">Singhana Road, Narnaul, Haryana — 123001</div>
-            <div style="font-size:10.5px;color:#888;margin-top:2px;">✉ gmsales@planettoyota.in &nbsp;|&nbsp; 📞 7056662516</div>
+            <div style="font-size:10.5px;color:#888;margin-top:2px;">✉ gmsales@planettoyota.in &nbsp;|&nbsp; 📞 7056662501</div>
           </div>
           <div style="flex:0 0 70px;text-align:right;">
             <img src="data:image/jpeg;base64,${document.getElementById('img-logo').dataset.b64}" style="width:64px;height:auto;display:block;margin-left:auto;" />
@@ -1924,7 +1930,7 @@ function buildPreviewHTML(q) {
         ${[
           ["MFG. YEAR", q.mfgYear||"—"],
           ["FUEL TYPE", q.veh.fuelType||"—"],
-          ["REG. TYPE", q.reg?.type||"Personal"],
+          ["QTY / UNITS", q.qty&&q.qty>1?q.qty+" Units":"1 Unit"],
           ["HYPOTHECATION", q.hypothecation||"Self Funded"]
         ].map(([l,v])=>`
           <div style="padding:8px 14px;border-right:1px solid #e8e8e8;">
@@ -1992,7 +1998,7 @@ function buildPreviewHTML(q) {
           <div style="text-align:center;">
             <div style="font-size:8.5px;color:#888;font-weight:800;letter-spacing:0.5px;margin-bottom:4px;">SCAN TO PAY</div>
             <img id="qr-preview-img" style="width:80px;height:80px;border:1px solid #ddd;border-radius:4px;display:block;margin:0 auto;" />
-            <div style="font-size:8.5px;color:#888;margin-top:3px;font-weight:600;">HDFC Bank</div>
+            <div style="font-size:8.5px;color:#888;margin-top:3px;font-weight:600;">Paytm</div>
           </div>
 
           <!-- Bank Details -->
@@ -2155,7 +2161,9 @@ async function sharePDF() {
   if(!printArea) { toast("⚠️ No quotation to share"); return; }
 
   const q = currentQuote;
-  const fileName = `Planet-Toyota-Quotation-${q?.id||"quote"}-${q?.cust?.name||"Customer"}`.replace(/\s+/g,"-");
+  const custName = (q?.cust?.name||"Customer").replace(/\s+/g,"-");
+  const vehModel = (q?.veh?.model||"").replace(/Toyota\s*/i,"").replace(/\s+/g,"-");
+  const fileName = ("Planet-Toyota-"+custName+"-"+vehModel).replace(/[^a-zA-Z0-9\-_]/g,"");
 
   toast("⏳ Generating PDF...", 5000);
 
