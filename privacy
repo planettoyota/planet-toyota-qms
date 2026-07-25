@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Privacy Policy - Planet Toyota</title>
+<style>
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Arial, sans-serif;
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 40px 24px 80px;
+    color: #1a1a1a;
+    line-height: 1.6;
+    background: #fff;
+  }
+  header {
+    border-bottom: 4px solid #EB0A1E;
+    padding-bottom: 20px;
+    margin-bottom: 32px;
+  }
+  h1 {
+    color: #EB0A1E;
+    font-size: 28px;
+    margin: 0 0 4px;
+  }
+  .subtitle {
+    color: #555;
+    font-size: 14px;
+  }
+  h2 {
+    font-size: 18px;
+    color: #1a1a1a;
+    margin-top: 32px;
+    border-left: 4px solid #EB0A1E;
+    padding-left: 12px;
+  }
+  p, li {
+    font-size: 15px;
+    color: #333;
+  }
+  .contact-box {
+    background: #f7f7f7;
+    border-radius: 8px;
+    padding: 20px;
+    margin-top: 16px;
+  }
+  .contact-box p {
+    margin: 4px 0;
+  }
+  footer {
+    margin-top: 48px;
+    padding-top: 16px;
+    border-top: 1px solid #e0e0e0;
+    font-size: 13px;
+    color: #888;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Privacy Policy</h1>
+  <div class="subtitle">Planet Toyota (Sanghi Autoplex Pvt. Ltd.) — Authorised Toyota Kirloskar Motor Dealership</div>
+</header>
+
+<p><em>Last updated: July 2026</em></p>
+
+<p>
+  Sanghi Autoplex Pvt. Ltd., operating as Planet Toyota ("we", "our", "us"), respects your privacy.
+  This policy explains how we collect, use, and protect information when you interact with us —
+  whether visiting our showroom, contacting us by phone or email, using our website or digital
+  tools, or engaging with our Google Business Profile.
+</p>
+
+<h2>Information We Collect</h2>
+<ul>
+  <li>Contact details you provide to us, such as name, phone number, and email address, when you enquire about a vehicle, book a service, or contact our team</li>
+  <li>Vehicle-related information such as registration number, VIN, and service history, when you use our sales, service, or parts departments</li>
+  <li>Feedback and reviews you choose to leave on our Google Business Profile or other public platforms</li>
+  <li>Basic usage information if you interact with our digital tools (such as quotation requests or service booking forms)</li>
+</ul>
+
+<h2>How We Use Your Information</h2>
+<ul>
+  <li>To respond to your enquiries, quotations, and service requests</li>
+  <li>To process vehicle sales, service, and parts transactions</li>
+  <li>To communicate with you about your vehicle, bookings, offers, or account with us</li>
+  <li>To respond to reviews and feedback you leave publicly, in order to improve our service</li>
+  <li>To comply with legal, regulatory, and manufacturer (Toyota Kirloskar Motor) requirements</li>
+</ul>
+
+<h2>How We Protect Your Information</h2>
+<p>
+  We take reasonable technical and organisational measures to protect personal information from
+  unauthorised access, loss, or misuse. Access to customer data within our dealership is limited
+  to authorised staff who require it to perform their roles.
+</p>
+
+<h2>Sharing of Information</h2>
+<p>
+  We do not sell your personal information. We may share necessary information with Toyota
+  Kirloskar Motor Pvt. Ltd. and its authorised partners (such as finance and insurance partners)
+  strictly for the purpose of completing your requested transaction, or as required by law.
+</p>
+
+<h2>Google Business Profile &amp; Reviews</h2>
+<p>
+  When you leave a review on our Google Business Profile, your review and our reply are publicly
+  visible as governed by Google's own policies. We use this information only to respond to your
+  feedback and improve our services — we do not use review content for any other purpose.
+</p>
+
+<h2>Your Rights</h2>
+<p>
+  You may contact us at any time to ask what information we hold about you, to request a
+  correction, or to request that we stop contacting you for marketing purposes.
+</p>
+
+<h2>Contact Us</h2>
+<div class="contact-box">
+  <p><strong>Planet Toyota (Sanghi Autoplex Pvt. Ltd.)</strong></p>
+  <p>Singhana Road, Narnaul, District Mahendragarh, Haryana</p>
+  <p>Phone: 7056662501</p>
+  <p>Email: gmsales@planettoyota.in</p>
+</div>
+
+<footer>
+  &copy; 2026 Sanghi Autoplex Pvt. Ltd. — Authorised Toyota Kirloskar Motor Dealer. This policy may be updated from time to time.
+</footer>
+
+</body>
+</html>
